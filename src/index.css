@@ -1,0 +1,152 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 260 20% 96%;
+    --foreground: 260 60% 8%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 260 60% 8%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 260 60% 8%;
+
+    --primary: 270 72% 30%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 270 60% 72%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 260 20% 93%;
+    --muted-foreground: 260 10% 45%;
+
+    --accent: 330 100% 72%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 260 20% 90%;
+    --input: 260 20% 90%;
+    --ring: 270 72% 30%;
+
+    --radius: 1rem;
+
+    /* Custom tokens */
+    --glass-bg: 0 0% 100% / 0.6;
+    --glass-border: 0 0% 100% / 0.3;
+    --glow-primary: 270 72% 30%;
+    --glow-accent: 330 100% 72%;
+    --glow-secondary: 270 60% 72%;
+
+    --sidebar-background: 270 72% 30%;
+    --sidebar-foreground: 270 20% 90%;
+    --sidebar-primary: 0 0% 100%;
+    --sidebar-primary-foreground: 270 72% 30%;
+    --sidebar-accent: 270 60% 40%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 270 60% 40%;
+    --sidebar-ring: 330 100% 72%;
+  }
+
+  .dark {
+    --background: 260 30% 6%;
+    --foreground: 260 10% 95%;
+    --card: 260 30% 10%;
+    --card-foreground: 260 10% 95%;
+    --popover: 260 30% 10%;
+    --popover-foreground: 260 10% 95%;
+    --primary: 270 60% 72%;
+    --primary-foreground: 260 30% 6%;
+    --secondary: 270 40% 25%;
+    --secondary-foreground: 260 10% 95%;
+    --muted: 260 20% 15%;
+    --muted-foreground: 260 10% 55%;
+    --accent: 330 100% 72%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 260 20% 18%;
+    --input: 260 20% 18%;
+    --ring: 270 60% 72%;
+    --sidebar-background: 260 30% 8%;
+    --sidebar-foreground: 260 10% 80%;
+    --sidebar-primary: 270 60% 72%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 260 20% 15%;
+    --sidebar-accent-foreground: 260 10% 95%;
+    --sidebar-border: 260 20% 15%;
+    --sidebar-ring: 330 100% 72%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Poppins', system-ui, sans-serif;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-white/60 backdrop-blur-xl border border-white/30 shadow-lg;
+  }
+  .glass-card-solid {
+    @apply bg-card backdrop-blur-xl border border-border shadow-sm;
+  }
+  .glow-orb {
+    @apply absolute rounded-full blur-3xl opacity-30 pointer-events-none;
+  }
+  .glow-orb-primary {
+    background: hsl(var(--glow-primary));
+  }
+  .glow-orb-accent {
+    background: hsl(var(--glow-accent));
+  }
+  .glow-orb-secondary {
+    background: hsl(var(--glow-secondary));
+  }
+  .stat-card {
+    @apply glass-card rounded-2xl p-6 relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5;
+  }
+  .nav-icon-btn {
+    @apply flex flex-col items-center gap-1 p-2 rounded-xl transition-all duration-200 cursor-pointer;
+  }
+  .nav-icon-btn.active {
+    @apply bg-white/15;
+  }
+  .nav-icon-btn:hover:not(.active) {
+    @apply bg-white/10;
+  }
+  .section-header {
+    @apply text-2xl font-black tracking-tight text-foreground;
+  }
+  .sub-label {
+    @apply text-[10px] font-bold tracking-widest uppercase text-muted-foreground;
+  }
+}
+
+@layer utilities {
+  .gradient-primary {
+    background: linear-gradient(135deg, hsl(270, 72%, 30%), hsl(270, 60%, 72%));
+  }
+  .gradient-accent {
+    background: linear-gradient(135deg, hsl(270, 60%, 72%), hsl(330, 100%, 72%));
+  }
+  .gradient-warm {
+    background: linear-gradient(135deg, hsl(330, 100%, 72%), hsl(20, 100%, 70%));
+  }
+  .text-gradient-primary {
+    background: linear-gradient(135deg, hsl(270, 72%, 30%), hsl(270, 60%, 72%));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+}
