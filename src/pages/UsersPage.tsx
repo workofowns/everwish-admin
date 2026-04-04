@@ -1,38 +1,61 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { fetchApi } from "@/lib/api";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
-import { Search, Filter, ExternalLink, Eye, ChevronDown } from "lucide-react";
+import { Search, ChevronDown, ShieldCheck, ShieldAlert, BadgeCheck, Trash2, UserCog, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { format } from "date-fns";
 
 interface User {
   id: string;
-  name: string;
+  display_name: string;
   email: string;
   plan: "free" | "premium";
-  wishesCreated: number;
-  joined: string;
-  lastActive: string;
+  role: string;
+  is_verified: boolean;
+  created_at: string;
 }
 
-const mockUsers: User[] = [
-  { id: "1", name: "Priya Sharma", email: "priya@example.com", plan: "premium", wishesCreated: 47, joined: "2024-01-15", lastActive: "2 min ago" },
-  { id: "2", name: "Rahul Mehta", email: "rahul@example.com", plan: "free", wishesCreated: 12, joined: "2024-02-20", lastActive: "1 hr ago" },
-  { id: "3", name: "Ananya Kumar", email: "ananya@example.com", plan: "premium", wishesCreated: 89, joined: "2023-11-05", lastActive: "5 min ago" },
-  { id: "4", name: "Vikram Patel", email: "vikram@example.com", plan: "free", wishesCreated: 3, joined: "2024-03-10", lastActive: "2 days ago" },
-  { id: "5", name: "Sneha Reddy", email: "sneha@example.com", plan: "premium", wishesCreated: 156, joined: "2023-08-22", lastActive: "10 min ago" },
-  { id: "6", name: "Amit Desai", email: "amit@example.com", plan: "free", wishesCreated: 8, joined: "2024-04-01", lastActive: "3 hrs ago" },
-  { id: "7", name: "Kavita Nair", email: "kavita@example.com", plan: "premium", wishesCreated: 34, joined: "2024-01-30", lastActive: "30 min ago" },
-  { id: "8", name: "Rohan Gupta", email: "rohan@example.com", plan: "free", wishesCreated: 21, joined: "2023-12-12", lastActive: "1 day ago" },
-];
+interface UsersResponse {
+  rows: User[];
+  total: number;
+}
 
 const UsersPage = () => {
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [filterPlan, setFilterPlan] = useState<"all" | "free" | "premium">("all");
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
 
-  const filtered = mockUsers.filter(u => {
-    const matchSearch = u.name.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase());
+  const { data, isLoading } = useQuery<UsersResponse>({
+    queryKey: ["adminUsers", search],
+    queryFn: () => fetchApi(`/users?search=${encodeURIComponent(search)}`),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: string, payload: any }) => 
+      fetchApi(`/users/${id}`, { method: "PATCH", body: JSON.stringify(payload) }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["adminUsers"] });
+      toast.success("User updated successfully");
+    },
+    onError: (e: any) => toast.error(e.message || "Update failed")
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => fetchApi(`/users/${id}`, { method: "DELETE" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["adminUsers"] });
+      toast.success("User deleted permanently");
+    },
+    onError: (e: any) => toast.error(e.message || "Deletion failed")
+  });
+
+  const activeUsers = data?.rows || [];
+  const filtered = activeUsers.filter(u => {
     const matchPlan = filterPlan === "all" || u.plan === filterPlan;
-    return matchSearch && matchPlan;
+    return matchPlan;
   });
 
   return (
@@ -58,11 +81,10 @@ const UsersPage = () => {
             <button
               key={plan}
               onClick={() => setFilterPlan(plan)}
-              className={`px-4 py-2.5 rounded-xl text-sm font-semibold capitalize transition-all ${
-                filterPlan === plan
-                  ? "bg-primary/10 text-primary border border-primary/20"
-                  : "bg-card border border-border text-muted-foreground hover:text-foreground"
-              }`}
+              className={`px-4 py-2.5 rounded-xl text-sm font-semibold capitalize transition-all ${filterPlan === plan
+                ? "bg-primary/10 text-primary border border-primary/20"
+                : "bg-card border border-border text-muted-foreground hover:text-foreground"
+                }`}
             >
               {plan}
             </button>
@@ -70,60 +92,95 @@ const UsersPage = () => {
         </div>
 
         {/* Users Table */}
-        <div className="glass-card rounded-2xl overflow-hidden">
-          <div className="grid grid-cols-[1fr_1.2fr_0.6fr_0.6fr_0.8fr_0.5fr] gap-4 px-5 py-3 border-b border-border/50">
-            {["Name", "Email", "Plan", "Wishes", "Last Active", ""].map(h => (
-              <span key={h} className="sub-label">{h}</span>
+        <div className="glass-card rounded-2xl overflow-hidden shadow-sm border border-border/50">
+          <div className="grid grid-cols-[1fr_1.2fr_0.6fr_0.6fr_0.8fr_0.5fr] gap-4 px-6 py-4 bg-muted/30 border-b border-border/50">
+            {["Name", "Email", "Plan", "Role", "Joined Date", ""].map(h => (
+              <span key={h} className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{h}</span>
             ))}
           </div>
-          {filtered.map((user, i) => (
+          {isLoading && <div className="p-12 text-center text-muted-foreground flex flex-col items-center gap-3">
+             <Loader2 className="w-8 h-8 animate-spin text-primary" />
+             <p className="text-sm font-semibold">Fetching user database...</p>
+          </div>}
+          {!isLoading && filtered.length === 0 && <div className="p-12 text-center text-muted-foreground text-sm font-medium">No users match your criteria.</div>}
+          {!isLoading && filtered.map((user, i) => (
             <motion.div key={user.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }}>
               <div
-                className="grid grid-cols-[1fr_1.2fr_0.6fr_0.6fr_0.8fr_0.5fr] gap-4 px-5 py-3.5 hover:bg-muted/30 transition-colors cursor-pointer items-center"
+                className={`grid grid-cols-[1fr_1.2fr_0.6fr_0.6fr_0.8fr_0.5fr] gap-4 px-6 py-4 transition-all cursor-pointer items-center group ${expandedUser === user.id ? "bg-primary/5" : "hover:bg-muted/30"}`}
                 onClick={() => setExpandedUser(expandedUser === user.id ? null : user.id)}
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full gradient-primary flex items-center justify-center text-white text-xs font-bold">
-                    {user.name.split(" ").map(n => n[0]).join("")}
+                  <div className={`w-9 h-9 rounded-xl ${user.plan === "premium" ? "gradient-accent" : "btn-primary shadow-none"} flex items-center justify-center text-white text-[10px] font-black group-hover:scale-110 transition-transform`}>
+                    {(user.display_name || user.email).split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase()}
                   </div>
-                  <span className="text-sm font-semibold text-foreground">{user.name}</span>
+                  <div>
+                    <p className="text-sm font-bold text-foreground truncate max-w-[120px]">{user.display_name || 'Anonymous'}</p>
+                    {user.is_verified && <span className="flex items-center gap-1 text-[8px] font-black text-blue-500 uppercase tracking-widest mt-0.5"><BadgeCheck className="w-2 h-2" /> Verified</span>}
+                  </div>
                 </div>
-                <span className="text-sm text-muted-foreground">{user.email}</span>
-                <span className={`text-xs font-bold uppercase tracking-wider ${user.plan === "premium" ? "text-amber-600" : "text-muted-foreground"}`}>
+                <span className="text-sm font-medium text-muted-foreground truncate">{user.email}</span>
+                <span className={`text-[10px] font-black uppercase tracking-tighter w-fit px-2 py-0.5 rounded-lg border ${user.plan === "premium" ? "bg-amber-50 text-amber-600 border-amber-200" : "bg-muted text-muted-foreground border-transparent"}`}>
                   {user.plan}
                 </span>
-                <span className="text-sm font-semibold text-foreground">{user.wishesCreated}</span>
-                <span className="text-xs text-muted-foreground">{user.lastActive}</span>
-                <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${expandedUser === user.id ? "rotate-180" : ""}`} />
+                <span className="text-[10px] font-bold text-foreground capitalize bg-foreground/5 px-2 py-0.5 rounded-lg w-fit">{user.role}</span>
+                <span className="text-xs font-semibold text-muted-foreground">{format(new Date(user.created_at), "MMM d, yyyy")}</span>
+                <div className="flex justify-end">
+                   <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${expandedUser === user.id ? "rotate-180 text-primary" : ""}`} />
+                </div>
               </div>
 
-              {/* Expanded: Wish history */}
-              {expandedUser === user.id && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  className="px-5 pb-4 overflow-hidden"
-                >
-                  <div className="ml-11 p-4 rounded-xl bg-muted/40 space-y-2">
-                    <p className="sub-label mb-2">Recent Wishes</p>
-                    {[
-                      { title: "Birthday Blessing for Mom", date: "Mar 15, 2024", link: "#" },
-                      { title: "Diwali Greeting", date: "Nov 12, 2023", link: "#" },
-                      { title: "Anniversary Wish", date: "Oct 5, 2023", link: "#" },
-                    ].map((wish, wi) => (
-                      <div key={wi} className="flex items-center justify-between p-2 rounded-lg hover:bg-card transition-colors">
-                        <div>
-                          <p className="text-sm font-medium text-foreground">{wish.title}</p>
-                          <p className="text-xs text-muted-foreground">{wish.date}</p>
-                        </div>
-                        <button className="flex items-center gap-1 text-xs text-primary font-semibold hover:text-primary/80">
-                          <ExternalLink className="w-3 h-3" /> View
-                        </button>
+              {/* Expanded: Manage */}
+              <AnimatePresence>
+                {expandedUser === user.id && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="p-6 ml-14 mr-6 mb-4 rounded-[1.5rem] bg-white border border-border flex flex-col md:flex-row gap-6">
+                      <div className="flex-1 space-y-4">
+                         <div className="flex items-center gap-2 mb-2">
+                            <UserCog className="w-4 h-4 text-primary" />
+                            <h4 className="text-xs font-black uppercase tracking-widest text-foreground">Management Console</h4>
+                         </div>
+                         <div className="grid grid-cols-2 gap-y-3 gap-x-6 text-[11px] font-medium text-muted-foreground">
+                            <div><strong className="text-foreground uppercase tracking-widest text-[9px] mb-0.5 block opacity-50">System ID</strong> <span className="font-mono">{user.id}</span></div>
+                            <div><strong className="text-foreground uppercase tracking-widest text-[9px] mb-0.5 block opacity-50">Last Login</strong> Just now</div>
+                            <div><strong className="text-foreground uppercase tracking-widest text-[9px] mb-0.5 block opacity-50">Verification</strong> {user.is_verified ? "Authenticated" : "Unverified"}</div>
+                            <div><strong className="text-foreground uppercase tracking-widest text-[9px] mb-0.5 block opacity-50">Role</strong> {user.role.toUpperCase()}</div>
+                         </div>
                       </div>
-                    ))}
-                  </div>
-                </motion.div>
-              )}
+
+                      <div className="flex flex-col gap-2 min-w-[200px]">
+                         <button 
+                           onClick={() => updateMutation.mutate({ id: user.id, payload: { plan: user.plan === "premium" ? "free" : "premium" } })}
+                           className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-muted hover:bg-primary/5 transition-colors group"
+                         >
+                            <span className="text-[10px] font-bold">Toggle Plan</span>
+                            {user.plan === "premium" ? <ShieldAlert className="w-4 h-4 text-amber-500" /> : <ShieldCheck className="w-4 h-4 text-emerald-500" />}
+                         </button>
+
+                         <button 
+                           onClick={() => updateMutation.mutate({ id: user.id, payload: { isVerified: !user.is_verified } })}
+                           className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-muted hover:bg-blue-50 transition-colors group"
+                         >
+                            <span className="text-[10px] font-bold">Verification</span>
+                            <BadgeCheck className={`w-4 h-4 ${user.is_verified ? "text-blue-500" : "text-muted-foreground/30"}`} />
+                         </button>
+
+                         <button 
+                           onClick={() => { if(window.confirm("Hard delete this user? This cannot be undone.")) deleteMutation.mutate(user.id); }}
+                           className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-muted hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors group mt-2"
+                         >
+                            <span className="text-[10px] font-bold">Delete Account</span>
+                            <Trash2 className="w-4 h-4" />
+                         </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.div>
           ))}
         </div>

@@ -1,8 +1,24 @@
-import { useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { fetchApi } from "@/lib/api";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import FieldBuilder from "@/components/dashboard/FieldBuilder";
-import { Plus, Search, Crown, Edit2, Trash2, X, Check, Settings2 } from "lucide-react";
+import {
+  Plus, Search, Crown, Edit2, Trash2, X, Check, Zap,
+  Settings2, RefreshCw, IndianRupee, Upload, Layers,
+  Globe, Layout, Tag, Box, AlertCircle
+} from "lucide-react";
+import { toast } from "sonner";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 
 interface FormField {
   name: string;
@@ -13,334 +29,606 @@ interface FormField {
   options?: string[];
 }
 
+interface StripePrice {
+  id: string;
+  nickname: string;
+  amount: number;
+  currency: string;
+}
+
 interface Template {
   id: string;
   name: string;
-  templeName: string;
+  template_name: string;
+  description: string;
   type: "free" | "premium";
-  componentName: string;
-  thumbnail: string;
-  formFields: FormField[];
+  component_key: string;
+  thumbnail_url: string;
+  form_fields: FormField[];
+  price: number;
+  currency: string;
+  stripe_product_id?: string | null;
+  stripe_price_id?: string | null;
+  category_id?: string;
+  category_name?: string;
+  sub_category_id?: string;
+  sub_category_name?: string;
+  price_id?: string | null;
+  price_nickname?: string;
+  is_active: boolean;
 }
 
-const initialTemplates: Template[] = [
-  {
-    id: "1", name: "Golden Birthday", templeName: "Tirupati Balaji", type: "premium",
-    componentName: "GoldenBirthdayTemplate", thumbnail: "",
-    formFields: [
-      { name: "recipientName", label: "Recipient's Name", type: "text", placeholder: "Enter name", required: true },
-      { name: "message", label: "Blessing Message", type: "textarea", placeholder: "Write your blessing...", required: true },
-      { name: "date", label: "Date of Birth", type: "date", placeholder: "", required: false },
-    ],
-  },
-  {
-    id: "2", name: "Divine Wedding", templeName: "Meenakshi Temple", type: "premium",
-    componentName: "DivineWeddingTemplate", thumbnail: "",
-    formFields: [
-      { name: "brideName", label: "Bride's Name", type: "text", placeholder: "Enter bride's name", required: true },
-      { name: "groomName", label: "Groom's Name", type: "text", placeholder: "Enter groom's name", required: true },
-      { name: "weddingDate", label: "Wedding Date", type: "date", placeholder: "", required: true },
-    ],
-  },
-  {
-    id: "3", name: "Diwali Sparkle", templeName: "Kashi Vishwanath", type: "free",
-    componentName: "DiwaliSparkleTemplate", thumbnail: "",
-    formFields: [
-      { name: "senderName", label: "Your Name", type: "text", placeholder: "Your name", required: true },
-      { name: "greeting", label: "Greeting", type: "select", placeholder: "", required: true, options: ["Happy Diwali!", "Shubh Deepavali!", "Festival of Lights"] },
-    ],
-  },
-  {
-    id: "4", name: "Simple Blessing", templeName: "Somnath Temple", type: "free",
-    componentName: "SimpleBlessingTemplate", thumbnail: "",
-    formFields: [
-      { name: "name", label: "Name", type: "text", placeholder: "Enter name", required: true },
-    ],
-  },
-];
+interface TemplatesResponse {
+  rows: Template[];
+  total: number;
+}
 
 const Templates = () => {
-  const [templates, setTemplates] = useState<Template[]>(initialTemplates);
+  const queryClient = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [categories, setCategories] = useState<any[]>([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState("");
+  const [selectedSubCategoryId, setSelectedSubCategoryId] = useState("");
+
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState<"all" | "free" | "premium">("all");
   const [editingFields, setEditingFields] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   // Add template form state
   const [newName, setNewName] = useState("");
-  const [newTempleName, setNewTempleName] = useState("");
+  const [newTemplateName, setNewTemplateName] = useState("");
+  const [newDescription, setNewDescription] = useState("");
+  const [newThumbnailUrl, setNewThumbnailUrl] = useState("");
   const [newType, setNewType] = useState<"free" | "premium">("free");
   const [newComponentName, setNewComponentName] = useState("");
   const [newFields, setNewFields] = useState<FormField[]>([
     { name: "name", label: "Name", type: "text", placeholder: "Enter name", required: true },
   ]);
+  const [newPrice, setNewPrice] = useState<number>(0);
+  const [newCurrency, setNewCurrency] = useState<string>("inr");
+  const [newPriceId, setNewPriceId] = useState<string>("");
+  const [newIsActive, setNewIsActive] = useState(true);
+  const [isUploading, setIsUploading] = useState(false);
 
-  const filtered = templates.filter(t => {
-    const matchesSearch = t.name.toLowerCase().includes(search.toLowerCase()) || t.templeName.toLowerCase().includes(search.toLowerCase());
-    const matchesType = filterType === "all" || t.type === filterType;
-    return matchesSearch && matchesType;
+  const { data, isLoading } = useQuery<TemplatesResponse>({
+    queryKey: ["adminTemplates", search],
+    queryFn: () => fetchApi(`/templates?search=${encodeURIComponent(search)}`),
   });
 
-  const updateFields = (templateId: string, fields: FormField[]) => {
-    setTemplates(prev => prev.map(t => t.id === templateId ? { ...t, formFields: fields } : t));
+  const { data: categoryData } = useQuery({
+    queryKey: ["categories"],
+    queryFn: () => fetchApi("/categories"),
+  });
+
+  const { data: subCategoriesData } = useQuery({
+    queryKey: ["sub-categories"],
+    queryFn: () => fetchApi("/sub-categories"),
+  });
+
+  const { data: pricesData } = useQuery<StripePrice[]>({
+    queryKey: ["stripePrices"],
+    queryFn: () => fetchApi("/stripe/prices"),
+  });
+
+  const templates = data?.rows || [];
+
+  const filtered = templates.filter(t => {
+    const matchesType = filterType === "all" || t.type === filterType;
+    return matchesType;
+  });
+
+  const uploadMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("context", "templates");
+
+      const response = await fetchApi(`/media/upload`, {
+        method: "POST",
+        body: formData
+      });
+
+      if (!response.ok) throw new Error("Upload failed");
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setNewThumbnailUrl(data.url);
+      toast.success("Image uploaded!");
+    },
+    onError: () => toast.error("Image upload failed"),
+    onSettled: () => setIsUploading(false)
+  });
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setIsUploading(true);
+      uploadMutation.mutate(file);
+    }
   };
 
-  const deleteTemplate = (id: string) => setTemplates(prev => prev.filter(t => t.id !== id));
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => fetchApi(`/templates/${id}`, { method: "DELETE" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["adminTemplates"] });
+      toast.success("Template deleted successfully");
+    },
+    onError: () => toast.error("Failed to delete template")
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: string, payload: any }) => fetchApi(`/templates/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(payload)
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["adminTemplates"] });
+      toast.success("Template updated successfully");
+      resetAddForm();
+    },
+    onError: (e: any) => toast.error(e.message || "Failed to update template")
+  });
+
+  const createMutation = useMutation({
+    mutationFn: (payload: any) => fetchApi(`/templates`, {
+      method: "POST",
+      body: JSON.stringify(payload)
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["adminTemplates"] });
+      toast.success("Template created successfully");
+      resetAddForm();
+    },
+    onError: (e: any) => toast.error(e.message || "Failed to create template")
+  });
+
+  const deleteTemplate = (id: string) => {
+    if (window.confirm("Are you sure you want to decommission this template design unit? This action cannot be reversed.")) {
+      deleteMutation.mutate(id);
+    }
+  };
 
   const resetAddForm = () => {
     setNewName("");
-    setNewTempleName("");
+    setNewTemplateName("");
+    setNewDescription("");
     setNewType("free");
     setNewComponentName("");
-    setNewFields([{ name: "name", label: "Name", type: "text", placeholder: "Enter name", required: true }]);
+    setNewPrice(0);
+    setNewCurrency("inr");
+    setNewPriceId("");
+    setNewIsActive(true);
+    setNewFields([
+      { name: "name", label: "Name", type: "text", placeholder: "Enter name", required: true },
+    ]);
+    setSelectedCategoryId("");
+    setSelectedSubCategoryId("");
+    setNewThumbnailUrl("");
     setShowAddForm(false);
+    setEditingId(null);
   };
 
-  const addTemplate = () => {
-    if (!newName.trim() || !newTempleName.trim() || !newComponentName.trim()) return;
-    const template: Template = {
-      id: Date.now().toString(),
+  const submitTemplate = () => {
+    if (!newName.trim() || !newComponentName.trim() || !selectedSubCategoryId) {
+      toast.error("Please fill required fields (Name, Component, Subcategory)");
+      return;
+    }
+
+    const payload = {
       name: newName.trim(),
-      templeName: newTempleName.trim(),
+      templateName: newTemplateName.trim(),
+      description: newDescription.trim(),
+      thumbnailUrl: newThumbnailUrl.trim(),
+      slug: newName.toLowerCase().replace(/\s+/g, "-"),
       type: newType,
-      componentName: newComponentName.trim(),
-      thumbnail: "",
+      componentKey: newComponentName.trim(),
       formFields: newFields,
+      price: newType === "premium" ? newPrice : 0,
+      currency: newCurrency,
+      subCategoryId: selectedSubCategoryId,
+      priceId: newPriceId || null,
+      isActive: newIsActive
     };
-    setTemplates(prev => [template, ...prev]);
-    resetAddForm();
+
+    if (editingId) {
+      updateMutation.mutate({ id: editingId, payload });
+    } else {
+      createMutation.mutate(payload);
+    }
   };
+
+  const startEdit = (template: Template) => {
+    setEditingId(template.id);
+    setNewName(template.name);
+    setNewTemplateName(template.template_name || "");
+    setNewDescription(template.description || "");
+    setNewType(template.type);
+    setNewComponentName(template.component_key);
+    setNewFields(template.form_fields || []);
+    setNewPrice(template.price || 0);
+    setNewCurrency(template.currency || "inr");
+    setNewThumbnailUrl(template.thumbnail_url || "");
+    setNewPriceId(template.price_id || "");
+    setNewIsActive(template.is_active);
+    setSelectedCategoryId(template.category_id || "");
+    setSelectedSubCategoryId(template.sub_category_id || "");
+    setShowAddForm(true);
+  };
+
+  const toggleTemplateActive = (template: Template) => {
+    updateMutation.mutate({
+      id: template.id,
+      payload: { isActive: !template.is_active }
+    });
+  };
+
+  useEffect(() => {
+    if (categoryData) {
+      setCategories(categoryData.data || []);
+    }
+  }, [categoryData]);
 
   return (
     <DashboardLayout>
       <div className="w-full">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <p className="sub-label mb-1">Template Management</p>
-            <h1 className="section-header text-3xl">Templates</h1>
+        {/* Header Section */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
+          <div className="flex items-center gap-5">
+            <div className="w-16 h-16 rounded-3xl bg-primary/10 flex items-center justify-center border border-primary/20">
+              <Layout className="w-8 h-8 text-primary" />
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary mb-1">Catalog Control</p>
+              <h1 className="text-3xl font-black text-slate-900 tracking-tight">Wish Templates</h1>
+            </div>
           </div>
           <button
             onClick={() => setShowAddForm(true)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl gradient-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity"
+            className="flex items-center gap-3 px-6 py-4 rounded-2xl btn-primary text-white font-bold text-sm shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
           >
-            <Plus className="w-4 h-4" /> Add Template
+            <Plus className="w-5 h-5" /> Add Design Template
           </button>
         </div>
 
-        {/* Add Template Modal */}
+        {/* Add/Edit Modal */}
         <AnimatePresence>
           {showAddForm && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/30 backdrop-blur-sm"
+              className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4"
               onClick={(e) => e.target === e.currentTarget && resetAddForm()}
             >
               <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                initial={{ opacity: 0, scale: 0.95, y: 10 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-card rounded-[2rem] shadow-2xl border border-border p-8 mx-4"
+                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                className="w-full max-w-5xl max-h-[92vh] bg-white rounded-2xl shadow-2xl flex flex-col border border-slate-200 overflow-hidden"
               >
-                {/* Header */}
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h2 className="text-xl font-black tracking-tight text-foreground">New Template</h2>
-                    <p className="text-sm text-muted-foreground mt-0.5">Create a new wish template with custom fields</p>
+                {/* ── Sticky Header ── */}
+                <div className="flex items-center justify-between px-7 py-5 border-b border-slate-100 bg-white flex-shrink-0">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <Layers className="w-4 h-4 text-primary" />
+                    </div>
+                    <div>
+                      <h2 className="text-base font-bold text-slate-800 leading-tight">{editingId ? 'Edit Template' : 'New Template'}</h2>
+                      <p className="text-[11px] text-slate-400">{editingId ? 'Update configuration below' : 'Fill in details to deploy a new design'}</p>
+                    </div>
                   </div>
-                  <button onClick={resetAddForm} className="p-2 rounded-xl hover:bg-muted text-muted-foreground transition-colors">
+                  <button onClick={resetAddForm} className="p-2 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-all">
                     <X className="w-5 h-5" />
                   </button>
                 </div>
 
-                {/* Form */}
-                <div className="space-y-5">
-                  {/* Template Name */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold tracking-widest uppercase text-muted-foreground">Template Name</label>
-                    <input
-                      value={newName}
-                      onChange={e => setNewName(e.target.value)}
-                      placeholder="e.g., Golden Birthday"
-                      className="w-full px-4 py-3 rounded-xl bg-muted text-sm font-medium outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-muted-foreground/50"
-                    />
-                  </div>
+                {/* ── Two-Column Body ── */}
+                <div className="flex flex-col lg:flex-row flex-1 min-h-0 divide-y lg:divide-y-0 lg:divide-x divide-slate-100">
 
-                  {/* Temple Name */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold tracking-widest uppercase text-muted-foreground">Temple Name</label>
-                    <input
-                      value={newTempleName}
-                      onChange={e => setNewTempleName(e.target.value)}
-                      placeholder="e.g., Tirupati Balaji"
-                      className="w-full px-4 py-3 rounded-xl bg-muted text-sm font-medium outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-muted-foreground/50"
-                    />
-                  </div>
+                  {/* LEFT — Core config */}
+                  <div className="lg:w-[52%] overflow-y-auto custom-scrollbar p-7 space-y-5">
 
-                  {/* Row: Type + Component Name */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold tracking-widest uppercase text-muted-foreground">Type</label>
-                      <div className="flex gap-2">
-                        {(["free", "premium"] as const).map(type => (
-                          <button
-                            key={type}
-                            onClick={() => setNewType(type)}
-                            className={`flex-1 py-2.5 rounded-xl text-sm font-semibold capitalize transition-all ${
-                              newType === type
-                                ? "bg-primary/10 text-primary border border-primary/20"
-                                : "bg-muted border border-transparent text-muted-foreground hover:text-foreground"
-                            }`}
-                          >
-                            {type === "premium" && <Crown className="w-3.5 h-3.5 inline mr-1" />}
-                            {type}
-                          </button>
-                        ))}
+                    {/* Name + Template Name */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Template Name</label>
+                        <input
+                          value={newName}
+                          onChange={e => setNewName(e.target.value)}
+                          placeholder="e.g. birthday-pro"
+                          className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-primary/15 focus:border-primary/30 transition-all placeholder:font-normal placeholder:text-slate-300"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Display Label</label>
+                        <input
+                          value={newTemplateName}
+                          onChange={e => setNewTemplateName(e.target.value)}
+                          placeholder="e.g. Birthday Blast"
+                          className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-primary/15 focus:border-primary/30 transition-all placeholder:font-normal placeholder:text-slate-300"
+                        />
                       </div>
                     </div>
+
+                    {/* Description */}
                     <div className="space-y-1.5">
-                      <label className="text-xs font-bold tracking-widest uppercase text-muted-foreground">Component Name</label>
-                      <input
-                        value={newComponentName}
-                        onChange={e => setNewComponentName(e.target.value)}
-                        placeholder="e.g., GoldenBirthdayTemplate"
-                        className="w-full px-4 py-3 rounded-xl bg-muted text-sm font-mono outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-muted-foreground/50"
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Description</label>
+                      <textarea
+                        value={newDescription}
+                        onChange={e => setNewDescription(e.target.value)}
+                        placeholder="Brief description of this template..."
+                        rows={2}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-600 outline-none focus:ring-2 focus:ring-primary/15 focus:border-primary/30 transition-all resize-none placeholder:text-slate-300"
                       />
+                    </div>
+
+                    {/* Category + Subcategory */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Category</label>
+                        <Select value={selectedCategoryId} onValueChange={(v) => { setSelectedCategoryId(v); setSelectedSubCategoryId(""); }}>
+                          <SelectTrigger className="w-full h-10 px-3.5 rounded-xl bg-slate-50 border-slate-200 text-sm font-medium text-slate-700 outline-none">
+                            <SelectValue placeholder="Select category" />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl border-slate-200 shadow-xl">
+                            {categories.map(c => <SelectItem key={c.id} value={c.id} className="text-sm">{c.name}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Subcategory</label>
+                        <Select value={selectedSubCategoryId} onValueChange={setSelectedSubCategoryId} disabled={!selectedCategoryId}>
+                          <SelectTrigger className="w-full h-10 px-3.5 rounded-xl bg-slate-50 border-slate-200 text-sm font-medium text-slate-700 outline-none">
+                            <SelectValue placeholder="Select subcategory" />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl border-slate-200 shadow-xl">
+                            {subCategoriesData?.data?.filter((sc: any) => sc.category_id === selectedCategoryId).map((sc: any) => (
+                              <SelectItem key={sc.id} value={sc.id} className="text-sm">{sc.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    {/* Component Key + Access Type */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Component Key</label>
+                        <input
+                          value={newComponentName}
+                          onChange={e => setNewComponentName(e.target.value)}
+                          placeholder="e.g. BirthdayClassic"
+                          className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm font-mono font-bold text-slate-500 outline-none focus:ring-2 focus:ring-primary/15 focus:border-primary/30 transition-all placeholder:font-normal placeholder:text-slate-300"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Access Type</label>
+                        <div className="flex h-10 bg-slate-50 border border-slate-200 p-1 rounded-xl">
+                          {(["free", "premium"] as const).map(type => (
+                            <button
+                              key={type}
+                              onClick={() => setNewType(type)}
+                              className={`flex-1 rounded-lg text-xs font-bold uppercase transition-all ${newType === type ? "bg-white text-primary shadow-sm border border-slate-200" : "text-slate-400 hover:text-slate-600"}`}
+                            >
+                              {type}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Stripe Pricing Link (premium only) */}
+                    {newType === "premium" && (
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Stripe Price Link</label>
+                        <Select value={newPriceId} onValueChange={setNewPriceId}>
+                          <SelectTrigger className="w-full h-10 px-3.5 rounded-xl bg-primary/5 border-primary/20 text-sm font-medium text-slate-700 outline-none">
+                            <SelectValue placeholder="Select a managed price point" />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl border-slate-200 shadow-xl">
+                            <SelectItem value="none" className="text-sm text-slate-400 italic">No linked price</SelectItem>
+                            {pricesData?.map(p => (
+                              <SelectItem key={p.id} value={p.id} className="text-sm">
+                                {p.nickname} — {p.currency.toUpperCase()} {p.amount / 100}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <p className="text-[10px] text-primary/60 italic pl-1">Multi-currency rates are auto-generated from the linked price.</p>
+                      </div>
+                    )}
+
+                    {/* Visibility Toggle */}
+                    <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200">
+                      <div>
+                        <p className="text-sm font-semibold text-slate-700">Public Visibility</p>
+                        <p className="text-[10px] text-slate-400 mt-0.5">Show this template on the marketplace</p>
+                      </div>
+                      <Switch checked={newIsActive} onCheckedChange={setNewIsActive} />
                     </div>
                   </div>
 
-                  {/* Divider */}
-                  <div className="border-t border-border/50 pt-5">
-                    <h3 className="text-sm font-bold text-foreground mb-3">Form Fields</h3>
+                  {/* RIGHT — Thumbnail + Form Fields */}
+                  <div className="lg:flex-1 overflow-y-auto custom-scrollbar p-7 space-y-6 bg-slate-50/50">
+
+                    {/* Thumbnail */}
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Cover Thumbnail</label>
+                      <div
+                        onClick={() => fileInputRef.current?.click()}
+                        className="group relative cursor-pointer rounded-xl overflow-hidden bg-white border-2 border-dashed border-slate-200 hover:border-primary/40 transition-all flex items-center justify-center"
+                        style={{ height: '160px' }}
+                      >
+                        {newThumbnailUrl ? (
+                          <>
+                            <img src={newThumbnailUrl} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" alt="Preview" />
+                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-all flex flex-col items-center justify-center text-white backdrop-blur-sm">
+                              <Upload className="w-6 h-6 mb-1" />
+                              <span className="text-xs font-bold">Replace Image</span>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="text-center">
+                            <div className={`w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center mx-auto mb-2 ${isUploading ? 'animate-pulse' : ''}`}>
+                              {isUploading ? <RefreshCw className="w-5 h-5 text-primary animate-spin" /> : <Upload className="w-5 h-5 text-slate-400" />}
+                            </div>
+                            <p className="text-sm font-semibold text-slate-500">Click to upload</p>
+                            <p className="text-[10px] text-slate-400 mt-0.5">PNG, JPG up to 5MB</p>
+                          </div>
+                        )}
+                        <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" accept="image/*" />
+                      </div>
+                    </div>
+
+                    {/* Field Builder */}
                     <FieldBuilder fields={newFields} onChange={setNewFields} />
                   </div>
                 </div>
 
-                {/* Footer */}
-                <div className="flex items-center justify-end gap-3 mt-8 pt-5 border-t border-border/50">
-                  <button
-                    onClick={resetAddForm}
-                    className="px-5 py-2.5 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition-all"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={addTemplate}
-                    disabled={!newName.trim() || !newTempleName.trim() || !newComponentName.trim()}
-                    className="flex items-center gap-2 px-6 py-2.5 rounded-xl gradient-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    <Check className="w-4 h-4" /> Create Template
-                  </button>
+                {/* ── Sticky Footer ── */}
+                <div className="flex items-center justify-between px-7 py-4 border-t border-slate-100 bg-white flex-shrink-0">
+                  <p className="text-[11px] text-slate-400">
+                    {newFields.length} input field{newFields.length !== 1 ? 's' : ''} configured
+                  </p>
+                  <div className="flex gap-3">
+                    <button onClick={resetAddForm} className="px-5 py-2 rounded-lg border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-all">
+                      Cancel
+                    </button>
+                    <button
+                      onClick={submitTemplate}
+                      disabled={createMutation.isPending || updateMutation.isPending || isUploading}
+                      className="px-7 py-2 rounded-lg btn-primary text-white font-bold text-sm shadow-md shadow-primary/20 hover:opacity-90 transition-all disabled:opacity-50 flex items-center gap-2"
+                    >
+                      {createMutation.isPending || updateMutation.isPending ? (
+                        <><RefreshCw className="w-4 h-4 animate-spin" /> Saving...</>
+                      ) : editingId ? (
+                        <><Check className="w-4 h-4" /> Save Changes</>
+                      ) : (
+                        <><Zap className="w-4 h-4" /> Deploy Template</>
+                      )}
+                    </button>
+                  </div>
                 </div>
               </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Search & Filters */}
-        <div className="flex items-center gap-3 mb-6">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        {/* Search & Statistics */}
+        <div className="flex flex-col md:flex-row gap-4 mb-8">
+          <div className="flex-1 relative group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-primary transition-colors" />
             <input
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search templates..."
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-card border border-border text-sm outline-none focus:ring-2 focus:ring-primary/30"
+              className="w-full pl-11 pr-4 py-2.5 rounded-xl bg-white border border-slate-200 text-sm font-medium outline-none focus:ring-2 focus:ring-primary/5 transition-all shadow-sm"
             />
           </div>
-          {(["all", "free", "premium"] as const).map(type => (
-            <button
-              key={type}
-              onClick={() => setFilterType(type)}
-              className={`px-4 py-2.5 rounded-xl text-sm font-semibold capitalize transition-all ${
-                filterType === type
-                  ? "bg-primary/10 text-primary border border-primary/20"
-                  : "bg-card border border-border text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {type}
-            </button>
-          ))}
+
+          <div className="flex bg-white p-1 rounded-xl border border-slate-200 shadow-sm">
+            {(["all", "free", "premium"] as const).map(type => (
+              <button
+                key={type}
+                onClick={() => setFilterType(type)}
+                className={`px-6 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${filterType === type
+                  ? "bg-primary text-white shadow-sm"
+                  : "text-slate-400 hover:text-slate-600"
+                  }`}
+              >
+                {type}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Template Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-5">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-5">
           {filtered.map((template, i) => (
             <motion.div
               key={template.id}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
-              className="glass-card rounded-2xl overflow-hidden group"
+              transition={{ delay: i * 0.02 }}
+              className={`group bg-white rounded-xl overflow-hidden border border-slate-200 transition-all hover:shadow-xl hover:border-primary/20 ${!template.is_active ? 'grayscale opacity-60' : ''}`}
             >
               {/* Thumbnail */}
-              <div className="h-36 gradient-accent relative flex items-center justify-center">
-                <span className="text-4xl opacity-60">🕉️</span>
-                {template.type === "premium" && (
-                  <div className="absolute top-3 right-3 flex items-center gap-1 px-2 py-1 rounded-lg bg-accent text-accent-foreground text-[10px] font-bold uppercase tracking-wider">
-                    <Crown className="w-3 h-3" /> Premium
-                  </div>
-                )}
-              </div>
+              <div className="aspect-[4/3] relative overflow-hidden bg-slate-100">
+                <img src={template.thumbnail_url} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" alt={template.name} />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
-              <div className="p-5">
-                <h3 className="font-bold text-foreground text-base">{template.name}</h3>
-                <p className="text-xs text-muted-foreground mt-0.5">{template.templeName}</p>
-                <p className="text-[10px] font-mono text-muted-foreground/70 mt-1 bg-muted px-2 py-0.5 rounded inline-block">
-                  {template.componentName}
-                </p>
-
-                {/* Fields summary */}
-                <div className="mt-3 flex items-center gap-2 flex-wrap">
-                  <span className="text-[10px] font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-md">
-                    {template.formFields.length} fields
-                  </span>
-                  {template.formFields.slice(0, 3).map(f => (
-                    <span key={f.name} className="text-[10px] text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded">
-                      {f.label}
-                    </span>
-                  ))}
-                </div>
-
-                {/* Actions */}
-                <div className="flex items-center gap-2 mt-4 pt-3 border-t border-border/50">
-                  <button
-                    onClick={() => setEditingFields(editingFields === template.id ? null : template.id)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-primary bg-primary/5 hover:bg-primary/10 transition-colors"
-                  >
-                    <Settings2 className="w-3.5 h-3.5" /> Fields
-                  </button>
-                  <button className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground transition-colors">
-                    <Edit2 className="w-3.5 h-3.5" />
-                  </button>
-                  <button onClick={() => deleteTemplate(template.id)} className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Inline Field Builder */}
-              <AnimatePresence>
-                {editingFields === template.id && (
-                  <motion.div
-                    initial={{ height: 0 }}
-                    animate={{ height: "auto" }}
-                    exit={{ height: 0 }}
-                    className="overflow-hidden border-t border-border/50"
-                  >
-                    <div className="p-5">
-                      <FieldBuilder
-                        fields={template.formFields}
-                        onChange={(fields) => updateFields(template.id, fields)}
-                      />
+                <div className="absolute top-3 left-3 right-3 flex items-start justify-between">
+                  <div className="flex flex-col gap-1.5">
+                    {template.type === "premium" && (
+                      <div className="bg-amber-400 text-black px-2 py-0.5 rounded-md text-[8px] font-bold uppercase flex items-center w-fit">
+                        <Crown className="w-2.5 h-2.5 mr-1" /> Premium
+                      </div>
+                    )}
+                    <div className="bg-slate-900/60 text-white backdrop-blur-sm px-2 py-0.5 rounded-md text-[8px] font-bold uppercase w-fit">
+                      {template.sub_category_name || "Misc"}
                     </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                  </div>
+                </div>
+
+                <div className="absolute inset-0 flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto">
+                  <button onClick={() => startEdit(template)} className="p-2 rounded-lg bg-white shadow-lg text-slate-800 hover:bg-primary hover:text-white transition-all scale-90 group-hover:scale-100">
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                  <button onClick={() => deleteTemplate(template.id)} className="p-2 rounded-lg bg-white shadow-lg text-rose-500 hover:bg-rose-500 hover:text-white transition-all scale-90 group-hover:scale-100">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-4 space-y-3">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-sm font-bold text-slate-800 truncate leading-tight mb-1">{template.name}</h3>
+                    <p className="text-[10px] text-slate-400 font-medium truncate">{template.template_name}</p>
+                  </div>
+                  <Switch
+                    className="scale-75 origin-right"
+                    checked={template.is_active}
+                    onCheckedChange={() => toggleTemplateActive(template)}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between pt-3 border-t border-slate-50">
+                  <div className="flex items-center gap-1.5">
+                    <div className="flex -space-x-1.5">
+                      {(template.form_fields || []).slice(0, 3).map((f, idx) => (
+                        <div key={idx} className="w-5 h-5 rounded-full bg-slate-100 border border-white flex items-center justify-center text-[8px] font-bold text-primary">
+                          {f.label.charAt(0)}
+                        </div>
+                      ))}
+                    </div>
+                    <span className="text-[9px] font-bold text-slate-400">{template.form_fields.length} inputs</span>
+                  </div>
+
+                  <div className="flex items-center gap-1">
+                    {template.type === "premium" ? (
+                      <span className="text-[10px] font-bold text-amber-600 truncate max-w-[60px]">{template.price_nickname || "Premium"}</span>
+                    ) : (
+                      <span className="text-[9px] font-bold text-emerald-500 uppercase">Free</span>
+                    )}
+                  </div>
+                </div>
+              </div>
             </motion.div>
           ))}
         </div>
+
+        {/* Empty State */}
+        {filtered.length === 0 && !isLoading && (
+          <div className="min-h-[400px] flex flex-col items-center justify-center p-12 border-4 border-dashed border-slate-100 rounded-[4rem] opacity-40 grayscale">
+            <Box className="w-16 h-16 text-slate-200 mb-6" />
+            <h3 className="section-header text-2xl">Vault Empty</h3>
+            <p className="text-sm font-bold text-slate-400 max-w-sm text-center mt-3 uppercase tracking-widest italic leaging-relaxed">Deploy your first design template to start populating your catalog.</p>
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );
