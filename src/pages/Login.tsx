@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Sparkles, ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
 
-const API_BASE_URL = "http://localhost:3001/admin/auth";
+const API_BASE_URL = `${import.meta.env.VITE_API_URL || "http://localhost:3001"}/admin/auth`;
 
 const Login = () => {
   const [email, setEmail] = useState("");

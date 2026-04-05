@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchApi, API_BASE_URL } from "@/lib/api";
+import { fetchApi, uploadMedia, MEDIA_FOLDERS } from "@/lib/api";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Plus, ChevronRight, Edit2, Trash2, FolderOpen, X, Check, Upload, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
@@ -63,42 +63,30 @@ const Categories = () => {
     }))
   }));
 
-  const uploadFile = async (file: File) => {
-    const formData = new FormData();
-    formData.append("context", "assets");
-    formData.append("file", file);
-
-    // The media API is NOT under /admin, so we need to construct the URL manually
-    const baseUrl = API_BASE_URL.replace("/admin", "");
-    const token = localStorage.getItem("adminToken");
-
-    const res = await fetch(`${baseUrl}/media/upload`, {
-      method: "POST",
-      body: formData,
-      headers: {
-        "Authorization": `Bearer ${token}`
-      }
-    });
-
-    if (!res.ok) throw new Error("Upload failed");
-    return res.json();
-  };
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, type: 'newCat' | 'editCat' | 'newSub' | 'editSub') => {
+  const handleFileChange = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    type: 'newCat' | 'editCat' | 'newSub' | 'editSub'
+  ) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const promise = uploadFile(file);
+    // Route to the correct S3 folder based on what's being uploaded
+    const folder = type === 'newSub' || type === 'editSub'
+      ? MEDIA_FOLDERS.SUB_CATEGORIES
+      : MEDIA_FOLDERS.CATEGORIES;
+
+    const promise = uploadMedia(file, folder);
+
     toast.promise(promise, {
-      loading: "Uploading image...",
-      success: (data) => {
-        if (type === 'newCat') setNewCatImageUrl(data.url);
-        if (type === 'editCat') setEditCatData({ ...editCatData, imageUrl: data.url });
-        if (type === 'newSub') setNewSubImageUrl(data.url);
-        if (type === 'editSub') setEditSubData({ ...editSubData, imageUrl: data.url });
-        return "Image uploaded";
+      loading: "Uploading to CDN...",
+      success: (cdnUrl) => {
+        if (type === 'newCat') setNewCatImageUrl(cdnUrl);
+        if (type === 'editCat') setEditCatData(prev => ({ ...prev, imageUrl: cdnUrl }));
+        if (type === 'newSub') setNewSubImageUrl(cdnUrl);
+        if (type === 'editSub') setEditSubData(prev => ({ ...prev, imageUrl: cdnUrl }));
+        return "Image uploaded successfully";
       },
-      error: "Upload failed"
+      error: (err) => err?.message || "Upload failed"
     });
   };
 
@@ -310,7 +298,7 @@ const Categories = () => {
                     </div>
                     <div className="flex-1">
                       <p className="font-black text-foreground text-lg">{cat.name}</p>
-                      <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest">/{cat.slug}</p>
+                      <p className="text-xs text-muted-foreground font-bold tracking-widest">/{cat.slug}</p>
                     </div>
                     <div className="px-3 py-1.5 rounded-full bg-muted/50 border border-border flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />

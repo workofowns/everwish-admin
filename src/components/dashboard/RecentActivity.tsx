@@ -77,7 +77,7 @@ const RecentActivity = () => {
                     <p className="text-xs font-semibold text-foreground/80 mt-0.5">{activity.details}</p>
                   )}
                 </div>
-                <span className="text-[10px] font-bold text-muted-foreground uppercase opacity-80">
+                <span className="text-[10px] font-bold text-muted-foreground capitalize opacity-80">
                   {formatDistanceToNow(new Date(activity.created_at), { addSuffix: true })}
                 </span>
               </motion.div>

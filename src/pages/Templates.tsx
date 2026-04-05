@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchApi } from "@/lib/api";
+import { fetchApi, uploadMedia, MEDIA_FOLDERS } from "@/lib/api";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import FieldBuilder from "@/components/dashboard/FieldBuilder";
 import {
@@ -46,6 +46,8 @@ interface Template {
   thumbnail_url: string;
   form_fields: FormField[];
   price: number;
+  price_amount: number;
+  real_price: number;
   currency: string;
   stripe_product_id?: string | null;
   stripe_price_id?: string | null;
@@ -56,12 +58,19 @@ interface Template {
   price_id?: string | null;
   price_nickname?: string;
   is_active: boolean;
+  tags: string[];
 }
 
 interface TemplatesResponse {
   rows: Template[];
   total: number;
 }
+
+const COMMON_TAGS = [
+  "Birthday", "Wedding", "Anniversary", "Valentine", "Father's Day", 
+  "Mother's Day", "Christmas", "New Year", "Party", "Corporate",
+  "Minimal", "Colorful", "Modern", "Classic", "Premium"
+];
 
 const Templates = () => {
   const queryClient = useQueryClient();
@@ -87,9 +96,9 @@ const Templates = () => {
   const [newFields, setNewFields] = useState<FormField[]>([
     { name: "name", label: "Name", type: "text", placeholder: "Enter name", required: true },
   ]);
-  const [newPrice, setNewPrice] = useState<number>(0);
-  const [newCurrency, setNewCurrency] = useState<string>("inr");
   const [newPriceId, setNewPriceId] = useState<string>("");
+  const [newTags, setNewTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState("");
   const [newIsActive, setNewIsActive] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
 
@@ -122,23 +131,13 @@ const Templates = () => {
 
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("context", "templates");
-
-      const response = await fetchApi(`/media/upload`, {
-        method: "POST",
-        body: formData
-      });
-
-      if (!response.ok) throw new Error("Upload failed");
-      return response.json();
+      return uploadMedia(file, MEDIA_FOLDERS.TEMPLATES);
     },
-    onSuccess: (data) => {
-      setNewThumbnailUrl(data.url);
-      toast.success("Image uploaded!");
+    onSuccess: (cdnUrl: string) => {
+      setNewThumbnailUrl(cdnUrl);
+      toast.success("Thumbnail uploaded to CDN!");
     },
-    onError: () => toast.error("Image upload failed"),
+    onError: (err: any) => toast.error(err?.message || "Image upload failed"),
     onSettled: () => setIsUploading(false)
   });
 
@@ -197,9 +196,9 @@ const Templates = () => {
     setNewDescription("");
     setNewType("free");
     setNewComponentName("");
-    setNewPrice(0);
-    setNewCurrency("inr");
     setNewPriceId("");
+    setNewTags([]);
+    setTagInput("");
     setNewIsActive(true);
     setNewFields([
       { name: "name", label: "Name", type: "text", placeholder: "Enter name", required: true },
@@ -209,6 +208,23 @@ const Templates = () => {
     setNewThumbnailUrl("");
     setShowAddForm(false);
     setEditingId(null);
+  };
+
+  const toggleTag = (tag: string) => {
+    setNewTags(prev => 
+      prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
+    );
+  };
+
+  const addCustomTag = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && tagInput.trim()) {
+      e.preventDefault();
+      const tag = tagInput.trim();
+      if (!newTags.includes(tag)) {
+        setNewTags([...newTags, tag]);
+      }
+      setTagInput("");
+    }
   };
 
   const submitTemplate = () => {
@@ -226,11 +242,10 @@ const Templates = () => {
       type: newType,
       componentKey: newComponentName.trim(),
       formFields: newFields,
-      price: newType === "premium" ? newPrice : 0,
-      currency: newCurrency,
       subCategoryId: selectedSubCategoryId,
       priceId: newPriceId || null,
-      isActive: newIsActive
+      isActive: newIsActive,
+      tags: newTags
     };
 
     if (editingId) {
@@ -248,10 +263,9 @@ const Templates = () => {
     setNewType(template.type);
     setNewComponentName(template.component_key);
     setNewFields(template.form_fields || []);
-    setNewPrice(template.price || 0);
-    setNewCurrency(template.currency || "inr");
     setNewThumbnailUrl(template.thumbnail_url || "");
     setNewPriceId(template.price_id || "");
+    setNewTags(template.tags || []);
     setNewIsActive(template.is_active);
     setSelectedCategoryId(template.category_id || "");
     setSelectedSubCategoryId(template.sub_category_id || "");
@@ -330,6 +344,39 @@ const Templates = () => {
 
                   {/* LEFT — Core config */}
                   <div className="lg:w-[52%] overflow-y-auto custom-scrollbar p-7 space-y-5">
+
+                    {/* Tags Multi-select */}
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                        <Tag className="w-3 h-3" /> Tags (Select or type & enter)
+                      </label>
+                      <div className="flex flex-wrap gap-2 p-3.5 rounded-xl bg-slate-50 border border-slate-200 min-h-[50px]">
+                        {newTags.map(tag => (
+                          <Badge key={tag} className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 flex items-center gap-1.5 px-2.5 py-1 rounded-lg">
+                            {tag}
+                            <X className="w-3 h-3 cursor-pointer" onClick={() => toggleTag(tag)} />
+                          </Badge>
+                        ))}
+                        <input
+                          value={tagInput}
+                          onChange={e => setTagInput(e.target.value)}
+                          onKeyDown={addCustomTag}
+                          placeholder={newTags.length === 0 ? "Add tags..." : ""}
+                          className="flex-1 bg-transparent border-none outline-none text-sm font-medium text-slate-600 min-w-[100px] placeholder:text-slate-300"
+                        />
+                      </div>
+                      <div className="flex flex-wrap gap-1.5 mt-2 overflow-x-auto pb-1 max-h-[80px]">
+                        {COMMON_TAGS.filter(t => !newTags.includes(t)).map(tag => (
+                          <button
+                            key={tag}
+                            onClick={() => toggleTag(tag)}
+                            className="px-2.5 py-1 rounded-lg border border-slate-200 text-[10px] font-bold text-slate-400 hover:border-primary hover:text-primary hover:bg-primary/5 transition-all whitespace-nowrap"
+                          >
+                            + {tag}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
 
                     {/* Name + Template Name */}
                     <div className="grid grid-cols-2 gap-4">
@@ -597,22 +644,29 @@ const Templates = () => {
                 </div>
 
                 <div className="flex items-center justify-between pt-3 border-t border-slate-50">
-                  <div className="flex items-center gap-1.5">
-                    <div className="flex -space-x-1.5">
-                      {(template.form_fields || []).slice(0, 3).map((f, idx) => (
-                        <div key={idx} className="w-5 h-5 rounded-full bg-slate-100 border border-white flex items-center justify-center text-[8px] font-bold text-primary">
-                          {f.label.charAt(0)}
-                        </div>
+                  <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                    <div className="flex flex-wrap gap-1">
+                      {(template.tags || []).slice(0, 2).map((tag, idx) => (
+                        <span key={idx} className="text-[8px] px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-500 font-bold border border-slate-200">
+                          {tag}
+                        </span>
                       ))}
+                      {template.tags?.length > 2 && <span className="text-[8px] text-slate-300">+{template.tags.length - 2}</span>}
                     </div>
-                    <span className="text-[9px] font-bold text-slate-400">{template.form_fields.length} inputs</span>
                   </div>
 
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 shrink-0">
                     {template.type === "premium" ? (
-                      <span className="text-[10px] font-bold text-amber-600 truncate max-w-[60px]">{template.price_nickname || "Premium"}</span>
+                      <div className="flex flex-col items-end">
+                        <span className="text-[10px] font-black text-amber-600 leading-none">
+                          {template.currency?.toUpperCase()} {template.real_price}
+                        </span>
+                        <span className="text-[7px] text-slate-300 font-bold uppercase tracking-tighter">
+                          {template.price_nickname || "Managed"}
+                        </span>
+                      </div>
                     ) : (
-                      <span className="text-[9px] font-bold text-emerald-500 uppercase">Free</span>
+                      <span className="text-[9px] font-black text-emerald-500 uppercase">Free</span>
                     )}
                   </div>
                 </div>
