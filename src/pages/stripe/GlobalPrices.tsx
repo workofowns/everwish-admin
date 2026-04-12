@@ -98,13 +98,25 @@ const GlobalPrices = () => {
                      e.preventDefault();
                      const formData = new FormData(e.currentTarget);
                      const pId = formData.get("productId") as string;
+                     console.log({
+                        productId: pId === "standalone" ? undefined : pId,
+                        nickname: formData.get("nickname") as string,
+                        amount: Math.round(parseFloat(formData.get("amount") as string) * 100),
+                        currency: formData.get("currency") as string,
+                        type: formData.get("type") as string,
+                        billingInterval: formData.get("billingInterval") as string,
+                        lookupKey: formData.get("lookupKey") as string,
+                     })
                      createPriceMutation.mutate({
                         productId: pId === "standalone" ? undefined : pId,
                         nickname: formData.get("nickname") as string,
                         amount: Math.round(parseFloat(formData.get("amount") as string) * 100),
                         currency: formData.get("currency") as string,
+                        type: formData.get("type") as string,
+                        billingInterval: formData.get("billingInterval") as string,
+                        lookupKey: formData.get("lookupKey") as string,
                      });
-                     e.currentTarget.reset();
+                     // e.currentTarget.reset();
                   }} className="space-y-8 relative z-10">
 
                      <div className="space-y-2">
@@ -151,12 +163,54 @@ const GlobalPrices = () => {
                         </div>
                      </div>
 
+                     <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                           <label className="text-[10px] font-black tracking-widest uppercase text-slate-500 ml-1">Type</label>
+                           <Select name="type" defaultValue="one_time">
+                              <SelectTrigger className="w-full h-14 px-6 rounded-2xl bg-slate-50/50 border-slate-100 text-xs font-bold outline-none">
+                                 <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent className="rounded-xl">
+                                 <SelectItem value="one_time" className="text-xs font-bold">One-time</SelectItem>
+                                 <SelectItem value="recurring" className="text-xs font-bold">Recurring (Sub)</SelectItem>
+                              </SelectContent>
+                           </Select>
+                        </div>
+                        <div className="space-y-2">
+                           <label className="text-[10px] font-black tracking-widest uppercase text-slate-500 ml-1">Interval</label>
+                           <Select name="billingInterval" defaultValue="month">
+                              <SelectTrigger className="w-full h-14 px-6 rounded-2xl bg-slate-50/50 border-slate-100 text-xs font-bold outline-none">
+                                 <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent className="rounded-xl">
+                                 <SelectItem value="month" className="text-xs font-bold">Monthly</SelectItem>
+                                 <SelectItem value="year" className="text-xs font-bold">Yearly</SelectItem>
+                              </SelectContent>
+                           </Select>
+                        </div>
+                     </div>
+
+                     <div className="space-y-2">
+                        <label className="text-[10px] font-black tracking-widest uppercase text-slate-500 ml-1">Lookup Key (Match Tier ID)</label>
+                        <Select name="lookupKey" defaultValue="">
+                           <SelectTrigger className="w-full h-14 px-6 rounded-2xl bg-slate-50/50 border-slate-100 text-xs font-bold outline-none">
+                              <SelectValue placeholder="Select Lookup Key" />
+                           </SelectTrigger>
+                           <SelectContent className="rounded-xl">
+                              <SelectItem value="price_pro_monthly" className="text-xs font-bold">Pro Monthly</SelectItem>
+                              <SelectItem value="price_pro_yearly" className="text-xs font-bold">Pro Yearly</SelectItem>
+                              <SelectItem value="price_premium_monthly" className="text-xs font-bold">Premium Monthly</SelectItem>
+                              <SelectItem value="price_premium_yearly" className="text-xs font-bold">Premium Yearly</SelectItem>
+                           </SelectContent>
+                        </Select>
+                     </div>
+
                      <button
                         type="submit"
                         disabled={createPriceMutation.isPending}
-                        className="w-full h-16 rounded-[1.5rem] btn-primary text-white font-black text-sm flex items-center justify-center gap-3 transition-all active:scale-95 disabled:opacity-50"
+                        className="w-full h-16 rounded-[1.5rem] bg-slate-900 text-white font-black text-sm flex items-center justify-center gap-3 transition-all active:scale-95 disabled:opacity-50"
                      >
-                        {createPriceMutation.isPending ? <RefreshCw className="w-5 h-5 animate-spin" /> : <><Plus className="w-5 h-5" /> Generate Multi-Currency Set</>}
+                        {createPriceMutation.isPending ? <RefreshCw className="w-5 h-5 animate-spin" /> : <><Plus className="w-5 h-5 text-white" /> Generate Global Set</>}
                      </button>
                   </form>
                </section>

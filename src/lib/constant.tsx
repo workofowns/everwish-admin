@@ -1,0 +1,22 @@
+export const CURRENCY_DETAILS: Record<string, { symbol: string; name: string }> = {
+    usd: { symbol: '$', name: 'US Dollar' },
+    inr: { symbol: '₹', name: 'Indian Rupee' },
+    eur: { symbol: '€', name: 'Euro' },
+    gbp: { symbol: '£', name: 'British Pound' },
+    aud: { symbol: 'A$', name: 'Australian Dollar' },
+    cad: { symbol: 'C$', name: 'Canadian Dollar' },
+    jpy: { symbol: '¥', name: 'Japanese Yen' },
+    sgd: { symbol: 'S$', name: 'Singapore Dollar' },
+    hkd: { symbol: 'HK$', name: 'Hong Kong Dollar' },
+    nzd: { symbol: 'NZ$', name: 'New Zealand Dollar' },
+    aed: { symbol: 'د.إ', name: 'UAE Dirham' },
+    sar: { symbol: '﷼', name: 'Saudi Riyal' },
+    chf: { symbol: 'CHF', name: 'Swiss Franc' },
+    myr: { symbol: 'RM', name: 'Malaysian Ringgit' },
+    thb: { symbol: '฿', name: 'Thai Baht' },
+    idr: { symbol: 'Rp', name: 'Indonesian Rupiah' },
+    php: { symbol: '₱', name: 'Philippine Peso' },
+    vnd: { symbol: '₫', name: 'Vietnamese Dong' },
+    krw: { symbol: '₩', name: 'South Korean Won' },
+    cny: { symbol: '¥', name: 'Chinese Yuan' }
+};

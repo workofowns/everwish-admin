@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchApi } from "@/lib/api";
+import { API_BASE, fetchApi } from "@/lib/api";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import {
    TrendingUp,
@@ -35,7 +35,7 @@ const Analytics = () => {
 
    // Real-time activity via Socket.io
    useEffect(() => {
-      const socket = io("http://localhost:3001");
+      const socket = io(API_BASE);
 
       socket.on("live_activity", (data) => {
          const iconMap: any = {

@@ -18,6 +18,10 @@ import Wishes from "./pages/Wishes";
 import ContactMessages from "./pages/ContactMessages";
 import Analytics from "./pages/Analytics";
 import './App.scss';
+import StripeSubscriptions from "./pages/stripe/Subscriptions";
+import BillingEvents from "./pages/stripe/BillingEvents";
+import StripeManagement from "./pages/stripe/StripeManagement";
+import MembershipPlans from "./pages/stripe/MembershipPlans";
 
 const queryClient = new QueryClient();
 
@@ -44,8 +48,12 @@ const App = () => (
           <Route path="/wishes" element={<RequireAuth><Wishes /></RequireAuth>} />
           <Route path="/orders" element={<RequireAuth><Orders /></RequireAuth>} />
           <Route path="/stripe" element={<RequireAuth><StripeDashboard /></RequireAuth>} />
+          <Route path="/stripe/subscriptions" element={<RequireAuth><StripeSubscriptions /></RequireAuth>} />
+          <Route path="/stripe/events" element={<RequireAuth><BillingEvents /></RequireAuth>} />
+          <Route path="/stripe/management" element={<RequireAuth><StripeManagement /></RequireAuth>} />
           <Route path="/stripe/template-products" element={<RequireAuth><StripeTemplates /></RequireAuth>} />
           <Route path="/stripe/global-prices" element={<RequireAuth><StripePrices /></RequireAuth>} />
+          <Route path="/stripe/plans" element={<RequireAuth><MembershipPlans /></RequireAuth>} />
           <Route path="/stripe-products" element={<Navigate to="/stripe" replace />} />
           <Route path="/contact" element={<RequireAuth><ContactMessages /></RequireAuth>} />
           <Route path="/users" element={<RequireAuth><UsersPage /></RequireAuth>} />

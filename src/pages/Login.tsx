@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Sparkles, ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
+import { ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
 
 const API_BASE_URL = `${import.meta.env.VITE_API_URL || "http://localhost:3001"}/admin/auth`;
 
@@ -11,7 +10,6 @@ const Login = () => {
   const [code, setCode] = useState("");
   const [step, setStep] = useState<"email" | "otp">("email");
   const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
 
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,7 +22,9 @@ const Login = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
-      if (!res.ok) throw new Error("Failed to send code");
+      const response = await res.json()
+      console.log({ response })
+      if (!res.ok) throw new Error(response?.error?.message || "Failed to send code");
       setStep("otp");
       toast.success("Verification code sent!");
     } catch (err: any) {
@@ -804,7 +804,7 @@ const Login = () => {
                     <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase">Security Code</label>
                     <button
                       type="button"
-                      onClick={() => setStep("email")}
+                      onClick={() => { setStep("email"); setCode("") }}
                       className="text-xs font-bold text-primary hover:text-primary/80 transition-colors"
                     >
                       Change Email

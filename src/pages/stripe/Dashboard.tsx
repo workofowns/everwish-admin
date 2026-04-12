@@ -2,14 +2,14 @@ import React from "react";
 import StripeLayout from "@/components/stripe/StripeLayout";
 import { useQuery } from "@tanstack/react-query";
 import { fetchApi } from "@/lib/api";
-import { 
-  TrendingUp, 
-  BarChart3, 
-  Activity, 
-  Clock, 
-  Globe, 
-  CheckCircle2, 
-  AlertCircle 
+import {
+  TrendingUp,
+  BarChart3,
+  Activity,
+  Clock,
+  Globe,
+  CheckCircle2,
+  AlertCircle
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -28,7 +28,7 @@ const StripeDashboard = () => {
 
   const stats = [
     { label: "Active Revenue", value: `₹${(adminStats?.totalRevenue / 100 || 0).toLocaleString()}`, icon: TrendingUp, trend: "+12.5%", color: "emerald" },
-    { label: "Total Price Points", value: prices?.length || 0, icon: BarChart3, trend: "Stable", color: "indigo" },
+    { label: "Active Plans", value: adminStats?.activeSubscriptions || 0, icon: BarChart3, trend: "Growth", color: "indigo" },
     { label: "Currency Coverage", value: "20+", icon: Globe, trend: "Auto-sync", color: "amber" },
     { label: "Daily Conversion", value: adminStats?.monthlyRevenue ? `₹${(adminStats.monthlyRevenue / 30 / 100).toFixed(0)}` : "0", icon: Activity, trend: "+5.2%", color: "rose" },
   ];
@@ -48,7 +48,7 @@ const StripeDashboard = () => {
             >
               <div className="flex items-center justify-between mb-6">
                 <div className={`w-12 h-12 rounded-2xl bg-${stat.color}-500/10 flex items-center justify-center text-${stat.color}-600 group-hover:scale-110 transition-transform`}>
-                   <stat.icon className="w-6 h-6" />
+                  <stat.icon className="w-6 h-6" />
                 </div>
                 <span className="text-[10px] font-black text-slate-400 group-hover:text-indigo-600 transition-colors uppercase tracking-widest leading-none bg-slate-50 px-2 py-1 rounded-full border border-slate-100">
                   {stat.trend}
@@ -68,8 +68,8 @@ const StripeDashboard = () => {
               <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1">Real-time Stripe communication status</p>
             </div>
             <div className="flex items-center gap-2 p-2 rounded-2xl bg-emerald-50 border border-emerald-100">
-               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-               <span className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">Operational</span>
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">Operational</span>
             </div>
           </div>
 
@@ -95,25 +95,25 @@ const StripeDashboard = () => {
 
         {/* Information Alert */}
         <div className="bg-indigo-600 rounded-[2.5rem] p-8 text-indigo-50 flex flex-col md:flex-row items-center justify-between gap-6 shadow-2xl shadow-indigo-100 overflow-hidden relative group">
-           <div className="relative z-10 flex items-center gap-6">
-              <div className="w-16 h-16 rounded-[1.2rem] bg-white/20 flex items-center justify-center shrink-0">
-                 <Clock className="w-8 h-8 text-white" />
-              </div>
-              <div className="max-w-[400px]">
-                 <h4 className="text-xl font-black text-white leading-tight">Master Pricing Sync Logic</h4>
-                 <p className="text-indigo-100/70 text-[11px] font-medium leading-relaxed mt-1 opacity-80 leading-normal">
-                   Our engine performs heavy-duty conversion for 20+ currencies simultaneously on creation. 
-                   Deleting an master price will safely deactivate all linked Stripe records.
-                 </p>
-              </div>
-           </div>
-           <div className="relative z-10 w-full md:w-auto">
-             <button className="w-full md:px-8 py-4 rounded-2xl bg-white text-indigo-600 font-black text-xs hover:scale-105 active:scale-95 transition-all shadow-xl shadow-indigo-900/20">
-               Audit Connections
-             </button>
-           </div>
-           {/* Abstract BG Pattern */}
-           <div className="absolute -top-10 -right-10 w-60 h-60 rounded-full bg-white/5 group-hover:scale-125 transition-transform duration-1000" />
+          <div className="relative z-10 flex items-center gap-6">
+            <div className="w-16 h-16 rounded-[1.2rem] bg-white/20 flex items-center justify-center shrink-0">
+              <Clock className="w-8 h-8 text-white" />
+            </div>
+            <div className="max-w-[400px]">
+              <h4 className="text-xl font-black text-white leading-tight">Master Pricing Sync Logic</h4>
+              <p className="text-indigo-100/70 text-[11px] font-medium leading-relaxed mt-1 opacity-80 leading-normal">
+                Our engine performs heavy-duty conversion for 20+ currencies simultaneously on creation.
+                Deleting an master price will safely deactivate all linked Stripe records.
+              </p>
+            </div>
+          </div>
+          <div className="relative z-10 w-full md:w-auto">
+            <button className="w-full md:px-8 py-4 rounded-2xl bg-white text-indigo-600 font-black text-xs hover:scale-105 active:scale-95 transition-all shadow-xl shadow-indigo-900/20">
+              Audit Connections
+            </button>
+          </div>
+          {/* Abstract BG Pattern */}
+          <div className="absolute -top-10 -right-10 w-60 h-60 rounded-full bg-white/5 group-hover:scale-125 transition-transform duration-1000" />
         </div>
       </div>
     </StripeLayout>

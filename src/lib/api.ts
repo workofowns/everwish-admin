@@ -1,15 +1,15 @@
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3001";
+export const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3001";
 export const API_BASE_URL = `${API_BASE}/admin`;
 export const MEDIA_BASE_URL = API_BASE; // /media is not under /admin
 
 // ── S3 Folder constants (must match backend S3_FOLDERS) ──────────────────────
 export const MEDIA_FOLDERS = {
-  CATEGORIES:     "categories",
+  CATEGORIES: "categories",
   SUB_CATEGORIES: "sub-categories",
-  TEMPLATES:      "templates",
-  WISHES:         "wishes",
-  USER_PROFILES:  "users/profiles",
-  USER_COVERS:    "users/covers",
+  TEMPLATES: "templates",
+  WISHES: "wishes",
+  USER_PROFILES: "users/profiles",
+  USER_COVERS: "users/covers",
 } as const;
 
 export type MediaFolder = typeof MEDIA_FOLDERS[keyof typeof MEDIA_FOLDERS];

@@ -13,6 +13,7 @@ interface SubCategory {
   slug: string;
   icon: string;
   image_url?: string;
+  theme_color?: string;
   sort_order: number;
 }
 
@@ -22,6 +23,7 @@ interface Category {
   slug: string;
   icon: string;
   image_url?: string;
+  theme_color?: string;
   sort_order: number;
 }
 
@@ -35,18 +37,20 @@ const Categories = () => {
   const [newCatSlug, setNewCatSlug] = useState("");
   const [newCatIcon, setNewCatIcon] = useState("📁");
   const [newCatImageUrl, setNewCatImageUrl] = useState("");
+  const [newCatColor, setNewCatColor] = useState("#6C41CF");
 
   const [addingSubTo, setAddingSubTo] = useState<string | null>(null);
   const [newSubName, setNewSubName] = useState("");
   const [newSubSlug, setNewSubSlug] = useState("");
   const [newSubIcon, setNewSubIcon] = useState("📄");
   const [newSubImageUrl, setNewSubImageUrl] = useState("");
+  const [newSubColor, setNewSubColor] = useState("#FF8BC4");
 
   const [editingCatId, setEditingCatId] = useState<string | null>(null);
-  const [editCatData, setEditCatData] = useState({ name: "", slug: "", icon: "", imageUrl: "" });
+  const [editCatData, setEditCatData] = useState({ name: "", slug: "", icon: "", imageUrl: "", themeColor: "" });
 
   const [editingSubId, setEditingSubId] = useState<string | null>(null);
-  const [editSubData, setEditSubData] = useState({ name: "", slug: "", icon: "", imageUrl: "" });
+  const [editSubData, setEditSubData] = useState({ name: "", slug: "", icon: "", imageUrl: "", themeColor: "" });
 
   const { data: catsRes } = useQuery({ queryKey: ["adminCategories"], queryFn: () => fetchApi("/categories") });
   const { data: subsRes } = useQuery({ queryKey: ["adminSubCategories"], queryFn: () => fetchApi("/sub-categories") });
@@ -56,10 +60,10 @@ const Categories = () => {
 
   const categories = catsData.map((c: Category) => ({
     ...c,
-    color: "#A37FF6",
+    color: c.theme_color || "#A37FF6",
     subcategories: subsData.filter((sc: SubCategory) => sc.category_id === c.id).map((sc: SubCategory) => ({
       ...sc,
-      color: "#FF8BC4"
+      color: sc.theme_color || "#FF8BC4"
     }))
   }));
 
@@ -95,7 +99,7 @@ const Categories = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["adminCategories"] });
       toast.success("Category added");
-      setNewCatName(""); setNewCatSlug(""); setNewCatIcon("📁"); setNewCatImageUrl(""); setShowAddCategory(false);
+      setNewCatName(""); setNewCatSlug(""); setNewCatIcon("📁"); setNewCatImageUrl(""); setNewCatColor("#6C41CF"); setShowAddCategory(false);
     }
   });
 
@@ -104,7 +108,7 @@ const Categories = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["adminSubCategories"] });
       toast.success("Subcategory added");
-      setNewSubName(""); setNewSubSlug(""); setNewSubIcon("📄"); setNewSubImageUrl(""); setAddingSubTo(null);
+      setNewSubName(""); setNewSubSlug(""); setNewSubIcon("📄"); setNewSubImageUrl(""); setNewSubColor("#FF8BC4"); setAddingSubTo(null);
     }
   });
 
@@ -142,7 +146,8 @@ const Categories = () => {
       name: newCatName,
       slug: newCatSlug || newCatName.toLowerCase().replace(/\s+/g, "-"),
       icon: newCatIcon,
-      imageUrl: newCatImageUrl
+      imageUrl: newCatImageUrl,
+      themeColor: newCatColor
     });
   };
 
@@ -153,13 +158,14 @@ const Categories = () => {
       name: newSubName,
       slug: newSubSlug || newSubName.toLowerCase().replace(/\s+/g, "-"),
       icon: newSubIcon,
-      imageUrl: newSubImageUrl
+      imageUrl: newSubImageUrl,
+      themeColor: newSubColor
     });
   };
 
   const startEditCategory = (e: React.MouseEvent, cat: Category) => {
     e.stopPropagation();
-    setEditCatData({ name: cat.name, slug: cat.slug, icon: cat.icon || "📁", imageUrl: cat.image_url || "" });
+    setEditCatData({ name: cat.name, slug: cat.slug, icon: cat.icon || "📁", imageUrl: cat.image_url || "", themeColor: cat.theme_color || "#A37FF6" });
     setEditingCatId(cat.id);
   };
 
@@ -171,7 +177,7 @@ const Categories = () => {
 
   const startEditSubcategory = (e: React.MouseEvent, sub: SubCategory) => {
     e.stopPropagation();
-    setEditSubData({ name: sub.name, slug: sub.slug, icon: sub.icon || "📄", imageUrl: sub.image_url || "" });
+    setEditSubData({ name: sub.name, slug: sub.slug, icon: sub.icon || "📄", imageUrl: sub.image_url || "", themeColor: sub.theme_color || "#FF8BC4" });
     setEditingSubId(sub.id);
   };
 
@@ -227,6 +233,16 @@ const Categories = () => {
                     )}
                     <input type="file" onChange={(e) => handleFileChange(e, 'newCat')} className="absolute inset-0 opacity-0 cursor-pointer" />
                   </div>
+
+                  {/* Modern Color Picker */}
+                  <div className="relative w-12 h-12 rounded-xl border border-muted-foreground/20 overflow-hidden cursor-pointer hover:border-primary/50 transition-colors">
+                    <input
+                      type="color"
+                      value={newCatColor}
+                      onChange={e => setNewCatColor(e.target.value)}
+                      className="absolute inset-0 w-[150%] h-[150%] -top-[25%] -left-[25%] cursor-pointer border-0 p-0"
+                    />
+                  </div>
                 </div>
 
                 <div className="flex-1 flex gap-3 min-w-[300px]">
@@ -252,6 +268,7 @@ const Categories = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05 }}
               className="glass-card rounded-[1.3rem] overflow-hidden border border-border/50"
+              style={{ backgroundColor: cat?.theme_color ? cat?.theme_color + 10 : undefined }}
             >
               {/* Category Header */}
               <div
@@ -269,6 +286,14 @@ const Categories = () => {
                           <Upload className="w-4 h-4 text-muted-foreground" />
                         )}
                         <input type="file" onChange={(e) => handleFileChange(e, 'editCat')} className="absolute inset-0 opacity-0 cursor-pointer" />
+                      </div>
+                      <div className="relative w-11 h-11 rounded-xl border border-muted-foreground/20 overflow-hidden cursor-pointer hover:border-primary/50 transition-colors">
+                        <input
+                          type="color"
+                          value={editCatData.themeColor}
+                          onChange={e => setEditCatData({ ...editCatData, themeColor: e.target.value })}
+                          className="absolute inset-0 w-[150%] h-[150%] -top-[25%] -left-[25%] cursor-pointer border-0 p-0"
+                        />
                       </div>
                     </div>
                     <div className="flex-1 flex gap-3 min-w-[200px]">
@@ -297,7 +322,7 @@ const Categories = () => {
                       )}
                     </div>
                     <div className="flex-1">
-                      <p className="font-black text-foreground text-lg">{cat.name}</p>
+                      <p className="font-black text-lg" style={{ color: cat?.theme_color ? cat?.theme_color : '#080821' }}>{cat.name}</p>
                       <p className="text-xs text-muted-foreground font-bold tracking-widest">/{cat.slug}</p>
                     </div>
                     <div className="px-3 py-1.5 rounded-full bg-muted/50 border border-border flex items-center gap-2">
@@ -342,6 +367,14 @@ const Categories = () => {
                                     <Upload className="w-3 h-3 text-muted-foreground" />
                                   )}
                                   <input type="file" onChange={(e) => handleFileChange(e, 'editSub')} className="absolute inset-0 opacity-0 cursor-pointer" />
+                                </div>
+                                <div className="relative w-10 h-10 rounded-xl border border-muted-foreground/20 overflow-hidden cursor-pointer hover:border-primary/50 transition-colors">
+                                  <input
+                                    type="color"
+                                    value={editSubData.themeColor}
+                                    onChange={e => setEditSubData({ ...editSubData, themeColor: e.target.value })}
+                                    className="absolute inset-0 w-[150%] h-[150%] -top-[25%] -left-[25%] cursor-pointer border-0 p-0"
+                                  />
                                 </div>
                               </div>
                               <div className="flex-1 flex gap-2 min-w-[200px]">
@@ -392,6 +425,14 @@ const Categories = () => {
                                   <Upload className="w-3.5 h-3.5 text-muted-foreground" />
                                 )}
                                 <input type="file" onChange={(e) => handleFileChange(e, 'newSub')} className="absolute inset-0 opacity-0 cursor-pointer" />
+                              </div>
+                              <div className="relative w-10 h-10 rounded-xl border border-muted-foreground/20 overflow-hidden cursor-pointer hover:border-primary/50 transition-colors bg-white">
+                                <input
+                                  type="color"
+                                  value={newSubColor}
+                                  onChange={e => setNewSubColor(e.target.value)}
+                                  className="absolute inset-0 w-[150%] h-[150%] -top-[25%] -left-[25%] cursor-pointer border-0 p-0"
+                                />
                               </div>
                             </div>
                             <div className="flex-1 flex gap-2 min-w-[200px]">

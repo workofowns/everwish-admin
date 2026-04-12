@@ -27,6 +27,24 @@ const StripeLayout = ({ children, title, subtitle }: StripeLayoutProps) => {
       description: "Overview & Analytics"
     },
     {
+      icon: DollarSign,
+      label: "Subscriptions",
+      path: "/stripe/subscriptions",
+      description: "Manage user plans"
+    },
+    {
+      icon: Package,
+      label: "System Management",
+      path: "/stripe/management",
+      description: "Initialize & Sync Stripe"
+    },
+    {
+      icon: Settings,
+      label: "Billing Events",
+      path: "/stripe/events",
+      description: "Audit trail & Webhooks"
+    },
+    {
       icon: Package,
       label: "Template Products",
       path: "/stripe/template-products",
@@ -34,10 +52,17 @@ const StripeLayout = ({ children, title, subtitle }: StripeLayoutProps) => {
     },
     {
       icon: DollarSign,
+      label: "Subscription Plans",
+      path: "/stripe/plans",
+      description: "Subscriptions & Tiers"
+    },
+    {
+      icon: DollarSign,
       label: "Global Prices",
       path: "/stripe/global-prices",
       description: "Multi-currency pricing"
     }
+
   ];
 
   return (

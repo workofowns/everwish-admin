@@ -23,10 +23,13 @@ import { Badge } from "@/components/ui/badge";
 interface FormField {
   name: string;
   label: string;
-  type: "text" | "textarea" | "date" | "select";
+  type: "text" | "textarea" | "date" | "select" | "image";
   placeholder: string;
   required: boolean;
   options?: string[];
+  multiple?: boolean;
+  maxSizeMB?: number;
+  description?: string;
 }
 
 interface StripePrice {
@@ -67,7 +70,7 @@ interface TemplatesResponse {
 }
 
 const COMMON_TAGS = [
-  "Birthday", "Wedding", "Anniversary", "Valentine", "Father's Day", 
+  "Birthday", "Wedding", "Anniversary", "Valentine", "Father's Day",
   "Mother's Day", "Christmas", "New Year", "Party", "Corporate",
   "Minimal", "Colorful", "Modern", "Classic", "Premium"
 ];
@@ -211,7 +214,7 @@ const Templates = () => {
   };
 
   const toggleTag = (tag: string) => {
-    setNewTags(prev => 
+    setNewTags(prev =>
       prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
     );
   };
