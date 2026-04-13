@@ -9,7 +9,8 @@ import {
   CreditCard,
   BarChart,
   ShoppingBag,
-  MessageSquare
+  MessageSquare,
+  Coins,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -20,10 +21,11 @@ const navItems = [
   { icon: LayoutGrid, label: "Templates", path: "/templates" },
   { icon: Sparkles, label: "Wishes", path: "/wishes" },
   { icon: ShoppingBag, label: "Orders", path: "/orders" },
-  { icon: CreditCard, label: "Stripe", path: "/stripe" },
-  { icon: Users, label: "Users", path: "/users" },
+  { icon: CreditCard, label: "Stripe",   path: "/stripe" },
+  { icon: Users,      label: "Users",    path: "/users" },
+  { icon: Coins,      label: "Credits",  path: "/credits" },
   { icon: MessageSquare, label: "Contact", path: "/contact" },
-  { icon: Settings, label: "Settings", path: "/settings" },
+  { icon: Settings,   label: "Settings", path: "/settings" },
 ];
 
 const DashboardSidebar = () => {

@@ -17,6 +17,7 @@ import Orders from "./pages/Orders";
 import Wishes from "./pages/Wishes";
 import ContactMessages from "./pages/ContactMessages";
 import Analytics from "./pages/Analytics";
+import CreditsPage from "./pages/Credits";
 import './App.scss';
 import StripeSubscriptions from "./pages/stripe/Subscriptions";
 import BillingEvents from "./pages/stripe/BillingEvents";
@@ -57,6 +58,7 @@ const App = () => (
           <Route path="/stripe-products" element={<Navigate to="/stripe" replace />} />
           <Route path="/contact" element={<RequireAuth><ContactMessages /></RequireAuth>} />
           <Route path="/users" element={<RequireAuth><UsersPage /></RequireAuth>} />
+          <Route path="/credits" element={<RequireAuth><CreditsPage /></RequireAuth>} />
           <Route path="/settings" element={<RequireAuth><SettingsPage /></RequireAuth>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
