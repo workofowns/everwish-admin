@@ -16,7 +16,8 @@ import {
   Settings2,
   Trash2,
   Save,
-  Globe
+  Globe,
+  Gift
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
@@ -159,7 +160,7 @@ const MembershipPlans = () => {
               <div className="flex justify-between items-start mb-8">
                 <div className="flex items-center gap-5">
                   <div className="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center shadow-sm">
-                    {plan.name === 'free' ? <Package className="w-6 h-6 text-slate-400" /> : plan.name === 'pro' ? <Zap className="w-6 h-6 text-amber-500" /> : <Crown className="w-6 h-6 text-indigo-600" />}
+                    {plan.name === 'free' ? <Package className="w-6 h-6 text-slate-400" /> : plan.name === 'pro' ? <Zap className="w-6 h-6 text-amber-500" /> : plan.name === 'premium' ? <Crown className="w-6 h-6 text-indigo-600" /> : <Gift className="w-6 h-6 text-rose-500" />}
                   </div>
                   <div>
                     <h4 className="text-xl font-black text-slate-900 leading-none mb-2">{plan.display_name}</h4>
