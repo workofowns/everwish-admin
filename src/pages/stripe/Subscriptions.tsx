@@ -150,22 +150,27 @@ const StripeSubscriptions = () => {
                       </div>
                     </td>
                     <td className="px-8 py-6 text-right">
-                      <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => {
-                            if (window.confirm("Are you sure you want to refund this subscription? This will also cancel access.")) {
-                              refundMutation.mutate(sub.stripe_subscription_id);
-                            }
-                          }}
-                          className="p-2 rounded-xl bg-slate-900 border border-slate-200 text-white hover:bg-rose-600 hover:border-rose-400 hover:text-white transition-all shadow-sm"
-                          title="Issue Refund"
-                        >
-                          <Undo2 className="w-4 h-4" />
-                        </button>
-                        <button className="p-2 rounded-xl bg-white border border-slate-200 text-slate-400 hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-600 transition-all shadow-sm">
-                          <CreditCard className="w-4 h-4" />
-                        </button>
-                      </div>
+                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="flex flex-col items-end mr-2">
+                             <span className={`text-[8px] font-black uppercase tracking-widest ${sub.razorpay_subscription_id ? 'text-blue-500' : 'text-indigo-500'}`}>
+                                {sub.razorpay_subscription_id ? 'Razorpay' : 'Stripe'}
+                             </span>
+                             <span className="text-[7px] font-mono text-slate-300">
+                                {sub.razorpay_subscription_id || sub.stripe_subscription_id}
+                             </span>
+                          </div>
+                          <button
+                            onClick={() => {
+                              if (window.confirm("Are you sure you want to refund this subscription? This will also cancel access.")) {
+                                refundMutation.mutate(sub.id);
+                              }
+                            }}
+                            className="p-2 rounded-xl bg-slate-900 border border-slate-200 text-white hover:bg-rose-600 hover:border-rose-400 hover:text-white transition-all shadow-sm"
+                            title="Issue Refund"
+                          >
+                            <Undo2 className="w-4 h-4" />
+                          </button>
+                        </div>
                     </td>
                   </motion.tr>
                 ))}

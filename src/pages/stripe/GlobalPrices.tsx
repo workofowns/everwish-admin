@@ -12,11 +12,13 @@ import {
    ExternalLink,
    ChevronRight,
    Zap,
-   IndianRupee
+   IndianRupee,
+   CreditCard
 } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface StripeProduct {
    id: string;
@@ -33,6 +35,7 @@ interface StripePrice {
    amount: number;
    currency: string;
    stripe_price_id: string;
+   type?: string;
    currency_options: Array<{
       currency: string;
       code: string;
@@ -40,6 +43,7 @@ interface StripePrice {
       unit_price: number;
       real_price: number;
       stripe_price_id: string;
+      razorpay_plan_id?: string;
    }>;
    is_active: boolean;
 }
@@ -64,6 +68,15 @@ const GlobalPrices = () => {
          toast.success("Global price generation complete!");
       },
       onError: (e: any) => toast.error(e.message || "Price creation failed")
+   });
+
+   const syncRazorpayMutation = useMutation({
+      mutationFn: (id: string) => fetchApi(`/prices/${id}/razorpay-sync`, { method: "POST" }),
+      onSuccess: () => {
+         queryClient.invalidateQueries({ queryKey: ["stripePrices"] });
+         toast.success("Razorpay multi-currency plans synced!");
+      },
+      onError: (e: any) => toast.error(e.message || "Razorpay sync failed")
    });
 
    const deletePriceMutation = useMutation({
@@ -98,15 +111,6 @@ const GlobalPrices = () => {
                      e.preventDefault();
                      const formData = new FormData(e.currentTarget);
                      const pId = formData.get("productId") as string;
-                     console.log({
-                        productId: pId === "standalone" ? undefined : pId,
-                        nickname: formData.get("nickname") as string,
-                        amount: Math.round(parseFloat(formData.get("amount") as string) * 100),
-                        currency: formData.get("currency") as string,
-                        type: formData.get("type") as string,
-                        billingInterval: formData.get("billingInterval") as string,
-                        lookupKey: formData.get("lookupKey") as string,
-                     })
                      createPriceMutation.mutate({
                         productId: pId === "standalone" ? undefined : pId,
                         nickname: formData.get("nickname") as string,
@@ -116,7 +120,6 @@ const GlobalPrices = () => {
                         billingInterval: formData.get("billingInterval") as string,
                         lookupKey: formData.get("lookupKey") as string,
                      });
-                     // e.currentTarget.reset();
                   }} className="space-y-8 relative z-10">
 
                      <div className="space-y-2">
@@ -255,6 +258,16 @@ const GlobalPrices = () => {
                                     </p>
                                  </div>
                                  <div className="flex gap-2">
+                                    {price.type === 'recurring' && (
+                                       <button
+                                          onClick={() => syncRazorpayMutation.mutate(price.id)}
+                                          disabled={syncRazorpayMutation.isPending}
+                                          title="Sync to Razorpay Plans"
+                                          className="p-4 rounded-2xl bg-slate-50 text-slate-400 hover:text-blue-600 hover:bg-blue-50 shadow-sm border border-slate-100 transition-all flex items-center justify-center"
+                                       >
+                                          {syncRazorpayMutation.isPending ? <RefreshCw className="w-5 h-5 animate-spin" /> : <CreditCard className="w-5 h-5" />}
+                                       </button>
+                                    )}
                                     <a href={`https://dashboard.stripe.com/prices/${price.stripe_price_id}`} target="_blank" className="p-4 rounded-2xl bg-slate-50 text-slate-400 hover:text-primary-600 hover:bg-white shadow-sm border border-slate-100 transition-all">
                                        <ExternalLink className="w-5 h-5" />
                                     </a>
@@ -277,12 +290,26 @@ const GlobalPrices = () => {
                                  </p>
                               </div>
                               <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
-                                 {(price.currency_options || []).map((opt) => (
-                                    <div key={opt.code} className="p-4 rounded-2xl bg-white border border-slate-100 flex flex-col items-center group/opt hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 transition-all">
-                                       <span className="text-[9px] font-black text-slate-400 group-hover/opt:text-primary transition-all uppercase mb-1 tracking-tighter">{opt.code}</span>
-                                       <span className="text-[11px] font-black text-slate-800">{opt.symbol}{opt.real_price.toFixed(2)}</span>
-                                    </div>
-                                 ))}
+                                 <TooltipProvider>
+                                    {(price.currency_options || []).map((opt) => (
+                                       <div key={opt.code} className="p-4 rounded-2xl bg-white border border-slate-100 flex flex-col items-center group/opt hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 transition-all text-center">
+                                          <span className="text-[9px] font-black text-slate-400 group-hover/opt:text-primary transition-all uppercase mb-1 tracking-tighter">{opt.code}</span>
+                                          <span className="text-[11px] font-black text-slate-800">{opt.symbol}{opt.real_price.toFixed(2)}</span>
+                                          {opt.razorpay_plan_id && (
+                                             <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                   <span className="mt-1 text-[7px] font-mono text-blue-500 bg-blue-50 px-1 rounded border border-blue-100 cursor-help truncate w-full block text-center">
+                                                      {opt.razorpay_plan_id}
+                                                   </span>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                   <p className="text-[10px]">Razorpay Plan ID: {opt.razorpay_plan_id}</p>
+                                                </TooltipContent>
+                                             </Tooltip>
+                                          )}
+                                       </div>
+                                    ))}
+                                 </TooltipProvider>
                               </div>
                            </div>
                         </motion.div>

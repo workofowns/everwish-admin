@@ -32,6 +32,8 @@ interface Order {
   user_email: string;
   user_name: string;
   template_name: string;
+  payment_method?: string;
+  razorpay_payment_id?: string;
 }
 
 const Orders = () => {
@@ -125,7 +127,12 @@ const Orders = () => {
                         </div>
                         <div>
                           <p className="font-bold text-foreground">{order.template_name}</p>
-                          <p className="text-xs text-muted-foreground">{order.user_email}</p>
+                          <div className="flex items-center gap-2">
+                             <p className="text-xs text-muted-foreground">{order.user_email}</p>
+                             <span className={`text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded border ${order.razorpay_payment_id ? 'text-blue-500 bg-blue-50 border-blue-100' : 'text-indigo-500 bg-indigo-50 border-indigo-100'}`}>
+                                {order.razorpay_payment_id ? 'Razorpay' : 'Stripe'}
+                             </span>
+                          </div>
                         </div>
                       </div>
                       <div className="text-right">
@@ -160,10 +167,23 @@ const Orders = () => {
 
                     <div className="space-y-6">
                        <div className="space-y-4">
-                          <DetailItem label="Order ID" value={selectedOrderId} mono />
-                          <DetailItem 
-                            label="Status" 
-                            value={
+                           <DetailItem label="Order ID" value={selectedOrderId} mono />
+                           <DetailItem 
+                             label="Gateway" 
+                             value={
+                               <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-widest border ${activeOrder?.razorpay_payment_id ? 'text-blue-600 bg-blue-50 border-blue-200' : 'text-indigo-600 bg-indigo-50 border-indigo-200'}`}>
+                                 {activeOrder?.razorpay_payment_id ? 'Razorpay' : 'Stripe'}
+                               </span>
+                             } 
+                           />
+                           {activeOrder?.razorpay_payment_id ? (
+                             <DetailItem label="Rzp Payment ID" value={activeOrder.razorpay_payment_id} mono />
+                           ) : activeOrder?.stripe_payment_intent_id ? (
+                             <DetailItem label="Stripe PI ID" value={activeOrder.stripe_payment_intent_id} mono />
+                           ) : null}
+                           <DetailItem 
+                             label="Status" 
+                             value={
                               <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-widest border ${getStatusConfig(activeOrder?.payment_status || "pending").className}`}>
                                 {activeOrder?.payment_status || "..."}
                               </span>

@@ -270,9 +270,16 @@ const MembershipPlans = () => {
                             <p className="text-[9px] font-black text-white/50 uppercase tracking-widest mb-2 border-b border-white/10 pb-1">Dynamic Conversion Grid</p>
                             <div className="grid grid-cols-2 gap-x-4 gap-y-1">
                               {price.currencyOptions?.map((opt: any) => (
-                                <div key={opt.code} className="flex items-center justify-between gap-3">
-                                  <span className="text-[10px] font-black text-white/40">{opt.code}</span>
-                                  <span className="text-[10px] font-black text-white">{opt.symbol}{opt.real_price.toFixed(2)}</span>
+                                <div key={opt.code} className="flex flex-col border-b border-white/5 pb-1 mb-1 last:border-0 last:pb-0 last:mb-0">
+                                  <div className="flex items-center justify-between gap-3">
+                                    <span className="text-[10px] font-black text-white/40">{opt.code}</span>
+                                    <span className="text-[10px] font-black text-white">{opt.symbol}{opt.real_price.toFixed(2)}</span>
+                                  </div>
+                                  {opt.razorpay_plan_id && (
+                                    <div className="text-[7px] font-mono text-blue-400 opacity-80 truncate">
+                                      RP: {opt.razorpay_plan_id}
+                                    </div>
+                                  )}
                                 </div>
                               ))}
                             </div>
