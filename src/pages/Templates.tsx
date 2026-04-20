@@ -104,6 +104,9 @@ const Templates = () => {
   const [tagInput, setTagInput] = useState("");
   const [newIsActive, setNewIsActive] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
+  // Holds the selected File locally — S3 upload deferred until Deploy
+  const [pendingThumbnailFile, setPendingThumbnailFile] = useState<File | null>(null);
+  const [localPreviewUrl, setLocalPreviewUrl] = useState<string>("");
 
   const { data, isLoading } = useQuery<TemplatesResponse>({
     queryKey: ["adminTemplates", search],
@@ -132,24 +135,19 @@ const Templates = () => {
     return matchesType;
   });
 
-  const uploadMutation = useMutation({
-    mutationFn: async (file: File) => {
-      return uploadMedia(file, MEDIA_FOLDERS.TEMPLATES);
-    },
-    onSuccess: (cdnUrl: string) => {
-      setNewThumbnailUrl(cdnUrl);
-      toast.success("Thumbnail uploaded to CDN!");
-    },
-    onError: (err: any) => toast.error(err?.message || "Image upload failed"),
-    onSettled: () => setIsUploading(false)
-  });
-
+  // Store file locally; actual S3 upload happens on Deploy
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setIsUploading(true);
-      uploadMutation.mutate(file);
-    }
+    if (!file) return;
+    // Revoke previous object URL to avoid memory leaks
+    if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl);
+    const preview = URL.createObjectURL(file);
+    setPendingThumbnailFile(file);
+    setLocalPreviewUrl(preview);
+    // Clear any previously saved CDN URL so preview shows the new file
+    setNewThumbnailUrl("");
+    // Reset file input so same file can be re-selected if needed
+    e.target.value = "";
   };
 
   const deleteMutation = useMutation({
@@ -217,6 +215,10 @@ const Templates = () => {
     setSelectedCategoryId("");
     setSelectedSubCategoryId("");
     setNewThumbnailUrl("");
+    // Clear pending file + revoke local preview
+    setPendingThumbnailFile(null);
+    if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl);
+    setLocalPreviewUrl("");
     setShowAddForm(false);
     setEditingId(null);
   };
@@ -238,17 +240,34 @@ const Templates = () => {
     }
   };
 
-  const submitTemplate = () => {
+  const submitTemplate = async () => {
     if (!newName.trim() || !newComponentName.trim() || !selectedSubCategoryId) {
       toast.error("Please fill required fields (Name, Component, Subcategory)");
       return;
+    }
+
+    let thumbnailUrl = newThumbnailUrl.trim();
+
+    // Upload to S3 now (only on Deploy/Save)
+    if (pendingThumbnailFile) {
+      setIsUploading(true);
+      try {
+        thumbnailUrl = await uploadMedia(pendingThumbnailFile, MEDIA_FOLDERS.TEMPLATES);
+        setNewThumbnailUrl(thumbnailUrl);
+        setPendingThumbnailFile(null);
+      } catch (err: any) {
+        toast.error(err?.message || "Thumbnail upload failed");
+        setIsUploading(false);
+        return;
+      }
+      setIsUploading(false);
     }
 
     const payload = {
       name: newName.trim(),
       templateName: newTemplateName.trim(),
       description: newDescription.trim(),
-      thumbnailUrl: newThumbnailUrl.trim(),
+      thumbnailUrl,
       slug: newName.toLowerCase().replace(/\s+/g, "-"),
       type: newType,
       componentKey: newComponentName.trim(),
@@ -520,9 +539,10 @@ const Templates = () => {
                         className="group relative cursor-pointer rounded-xl overflow-hidden bg-white border-2 border-dashed border-slate-200 hover:border-primary/40 transition-all flex items-center justify-center"
                         style={{ height: '160px' }}
                       >
-                        {newThumbnailUrl ? (
+                        {/* Show local preview (pending file) or existing CDN URL */}
+                        {(localPreviewUrl || newThumbnailUrl) ? (
                           <>
-                            <img src={newThumbnailUrl} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" alt="Preview" />
+                            <img src={localPreviewUrl || newThumbnailUrl} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" alt="Preview" />
                             <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-all flex flex-col items-center justify-center text-white backdrop-blur-sm">
                               <Upload className="w-6 h-6 mb-1" />
                               <span className="text-xs font-bold">Replace Image</span>
@@ -530,8 +550,8 @@ const Templates = () => {
                           </>
                         ) : (
                           <div className="text-center">
-                            <div className={`w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center mx-auto mb-2 ${isUploading ? 'animate-pulse' : ''}`}>
-                              {isUploading ? <RefreshCw className="w-5 h-5 text-primary animate-spin" /> : <Upload className="w-5 h-5 text-slate-400" />}
+                            <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center mx-auto mb-2">
+                              <Upload className="w-5 h-5 text-slate-400" />
                             </div>
                             <p className="text-sm font-semibold text-slate-500">Click to upload</p>
                             <p className="text-[10px] text-slate-400 mt-0.5">PNG, JPG up to 5MB</p>
@@ -560,7 +580,9 @@ const Templates = () => {
                       disabled={createMutation.isPending || updateMutation.isPending || isUploading}
                       className="px-7 py-2 rounded-lg btn-primary text-white font-bold text-sm shadow-md shadow-primary/20 hover:opacity-90 transition-all disabled:opacity-50 flex items-center gap-2"
                     >
-                      {createMutation.isPending || updateMutation.isPending ? (
+                      {isUploading ? (
+                        <><RefreshCw className="w-4 h-4 animate-spin" /> Uploading...</>
+                      ) : createMutation.isPending || updateMutation.isPending ? (
                         <><RefreshCw className="w-4 h-4 animate-spin" /> Saving...</>
                       ) : editingId ? (
                         <><Check className="w-4 h-4" /> Save Changes</>
