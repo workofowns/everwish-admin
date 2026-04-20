@@ -153,12 +153,20 @@ const Templates = () => {
   };
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => fetchApi(`/templates/${id}`, { method: "DELETE" }),
+    mutationFn: async (id: string) => fetchApi(`/templates/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["adminTemplates"] });
       toast.success("Template deleted successfully");
     },
-    onError: () => toast.error("Failed to delete template")
+    onError: () => toast.error("Failed to delete template"),
+    onSettled(data, error, variables, context) {
+      if (error) {
+        toast.error("Failed to delete template");
+      } else {
+        queryClient.invalidateQueries({ queryKey: ["adminTemplates"] });
+        toast.success("Template deleted successfully");
+      }
+    },
   });
 
   const updateMutation = useMutation({
