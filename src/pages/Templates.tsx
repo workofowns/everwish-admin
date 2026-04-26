@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchApi, uploadMedia, MEDIA_FOLDERS } from "@/lib/api";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
-import FieldBuilder from "@/components/dashboard/FieldBuilder";
+import FormBuilder, { FormStep } from "@/components/dashboard/FormBuilder";
 import {
   Plus, Search, Crown, Edit2, Trash2, X, Check, Zap,
   Settings2, RefreshCw, IndianRupee, Upload, Layers,
@@ -47,7 +47,7 @@ interface Template {
   type: "free" | "premium";
   component_key: string;
   thumbnail_url: string;
-  form_fields: FormField[];
+  form_fields: FormField[] | FormStep[];
   price: number;
   price_amount: number;
   real_price: number;
@@ -96,8 +96,12 @@ const Templates = () => {
   const [newThumbnailUrl, setNewThumbnailUrl] = useState("");
   const [newType, setNewType] = useState<"free" | "premium">("free");
   const [newComponentName, setNewComponentName] = useState("");
-  const [newFields, setNewFields] = useState<FormField[]>([
-    { name: "name", label: "Name", type: "text", placeholder: "Enter name", required: true },
+  const [newFields, setNewFields] = useState<FormStep[]>([
+    {
+      id: `step_1`,
+      title: "Step 1",
+      fields: [{ name: "name", label: "Name", type: "text", placeholder: "Enter name", required: true }]
+    }
   ]);
   const [newPriceId, setNewPriceId] = useState<string>("");
   const [newTags, setNewTags] = useState<string[]>([]);
@@ -202,7 +206,11 @@ const Templates = () => {
     setTagInput("");
     setNewIsActive(true);
     setNewFields([
-      { name: "name", label: "Name", type: "text", placeholder: "Enter name", required: true },
+      {
+        id: `step_${Date.now()}`,
+        title: "Step 1",
+        fields: [{ name: "name", label: "Name", type: "text", placeholder: "Enter name", required: true }]
+      }
     ]);
     setSelectedCategoryId("");
     setSelectedSubCategoryId("");
@@ -260,7 +268,7 @@ const Templates = () => {
       templateName: newTemplateName.trim(),
       description: newDescription.trim(),
       thumbnailUrl,
-      slug: newName.toLowerCase().replace(/\s+/g, "-"),
+      slug: newName.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""),
       type: newType,
       componentKey: newComponentName.trim(),
       formFields: newFields,
@@ -284,7 +292,21 @@ const Templates = () => {
     setNewDescription(template.description || "");
     setNewType(template.type);
     setNewComponentName(template.component_key);
-    setNewFields(template.form_fields || []);
+    let fieldsToEdit = template.form_fields || [];
+    if (fieldsToEdit.length > 0 && !('fields' in fieldsToEdit[0])) {
+      fieldsToEdit = [{
+        id: 'step_1',
+        title: 'Step 1',
+        fields: fieldsToEdit as any
+      }];
+    } else if (fieldsToEdit.length === 0) {
+      fieldsToEdit = [{
+        id: `step_${Date.now()}`,
+        title: "Step 1",
+        fields: []
+      }];
+    }
+    setNewFields(fieldsToEdit);
     setNewThumbnailUrl(template.thumbnail_url || "");
     setNewPriceId(template.price_id || "");
     setNewTags(template.tags || []);
@@ -553,15 +575,15 @@ const Templates = () => {
                       </div>
                     </div>
 
-                    {/* Field Builder */}
-                    <FieldBuilder fields={newFields} onChange={setNewFields} />
+                    {/* Form Builder */}
+                    <FormBuilder steps={newFields} onChange={setNewFields} />
                   </div>
                 </div>
 
                 {/* ── Sticky Footer ── */}
                 <div className="flex items-center justify-between px-7 py-4 border-t border-slate-100 bg-white flex-shrink-0">
                   <p className="text-[11px] text-slate-400">
-                    {newFields.length} input field{newFields.length !== 1 ? 's' : ''} configured
+                    {newFields.length} form step{newFields.length !== 1 ? 's' : ''} configured
                   </p>
                   <div className="flex gap-3">
                     <button onClick={resetAddForm} className="px-5 py-2 rounded-lg border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-all">

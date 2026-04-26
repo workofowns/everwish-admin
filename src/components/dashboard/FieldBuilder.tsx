@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Trash2, GripVertical, Check, X, Layers, Settings2 } from "lucide-react";
 
-interface FormField {
+export interface FormField {
   name: string;
   label: string;
   type: "text" | "textarea" | "date" | "select" | "image";
