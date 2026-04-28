@@ -1,15 +1,18 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Trash2, GripVertical, Check, X, Layers, Settings2 } from "lucide-react";
+import { Plus, Trash2, GripVertical, Check, X, Layers, Settings2, Upload } from "lucide-react";
 
 export interface FormField {
   name: string;
   label: string;
   type: "text" | "textarea" | "date" | "select" | "image";
   placeholder: string;
+  defaultValue?: string;
+  _files?: File[]; // plural storage for pending default image uploads
   required: boolean;
   options?: string[];
   multiple?: boolean;
+  maxFiles?: number;
   maxSizeMB?: number;
   description?: string;
 }
@@ -112,49 +115,137 @@ const FieldBuilder = ({ fields, onChange }: FieldBuilderProps) => {
                     </select>
                   </div>
                   {field.type !== "image" && (
-                    <div className="col-span-3">
-                      <input
-                        value={field.placeholder}
-                        onChange={e => updateField(i, { placeholder: e.target.value })}
-                        className="w-full px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-100 text-[11px] font-medium text-slate-500 outline-none focus:bg-white transition-all"
-                        placeholder="Placeholder"
-                      />
+                    <div className="flex gap-2 flex-1">
+                      <div className="flex-1">
+                        <input
+                          value={field.placeholder}
+                          onChange={e => updateField(i, { placeholder: e.target.value })}
+                          className="w-full px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-100 text-[11px] font-medium text-slate-500 outline-none focus:bg-white transition-all"
+                          placeholder="Placeholder"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <input
+                          value={field.defaultValue || ""}
+                          onChange={e => updateField(i, { defaultValue: e.target.value })}
+                          className="w-full px-3 py-1.5 rounded-lg bg-emerald-50/50 border border-emerald-100 text-[11px] font-medium text-emerald-700 outline-none focus:bg-white transition-all placeholder:text-emerald-300"
+                          placeholder="Default Value"
+                        />
+                      </div>
                     </div>
                   )}
 
                   {field.type === "image" && (
-                    <div className="col-span-3">
-                      <label className="flex items-center cursor-pointer group/req">
-                        <input
-                          type="checkbox"
-                          checked={field.multiple}
-                          onChange={e => updateField(i, { multiple: e.target.checked })}
-                          className="hidden"
-                        />
-                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all ${field.multiple ? 'bg-primary text-white shadow-sm' : 'bg-slate-50 text-slate-200 border border-slate-100'}`}>
-                          <Check className={`w-3.5 h-3.5 transition-transform ${field.multiple ? 'scale-100' : 'scale-0'}`} />
+                    <div className="col-span-3 space-y-2">
+                      <div className="flex items-center gap-4">
+                        <label className="flex items-center cursor-pointer group/req">
+                          <input
+                            type="checkbox"
+                            checked={field.multiple}
+                            onChange={e => updateField(i, { multiple: e.target.checked })}
+                            className="hidden"
+                          />
+                          <div className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all ${field.multiple ? 'bg-primary text-white shadow-sm' : 'bg-slate-50 text-slate-200 border border-slate-100'}`}>
+                            <Check className={`w-3.5 h-3.5 transition-transform ${field.multiple ? 'scale-100' : 'scale-0'}`} />
+                          </div>
+                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter ml-2">Multiple</span>
+                        </label>
+                        <div className="flex-1 flex items-center gap-2">
+                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter whitespace-nowrap">Max Size</span>
+                          <input
+                            type="number"
+                            value={field.maxSizeMB || ''}
+                            onChange={e => updateField(i, { maxSizeMB: e.target.value ? Number(e.target.value) : undefined })}
+                            className="w-16 px-2 py-1 rounded-lg bg-slate-50 border border-slate-100 text-[11px] font-medium text-slate-500 outline-none focus:bg-white transition-all"
+                          />
+                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">MB</span>
                         </div>
-                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter ml-2">Multiple</span>
-                      </label>
-                      <label className="flex items-center cursor-pointer group/req mt-2">
-                        <input
-                          type="number"
-                          value={field.maxSizeMB}
-                          onChange={e => updateField(i, { maxSizeMB: Number(e.target.value) })}
-                          className="w-full px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-100 text-[11px] font-medium text-slate-500 outline-none focus:bg-white transition-all"
-                        />
-                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Max Size (MB)</span>
-                      </label>
 
-                      <label className="flex items-center cursor-pointer group/req mt-2">
-                        <input
-                          type="text"
-                          placeholder="Description"
-                          value={field.description}
-                          onChange={e => updateField(i, { description: e.target.value })}
-                          className="w-full px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-100 text-[11px] font-medium text-slate-500 outline-none focus:bg-white transition-all"
-                        />
-                      </label>
+                        {field.multiple && (
+                          <div className="flex-1 flex items-center gap-2">
+                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter whitespace-nowrap">Max Count</span>
+                            <input
+                              type="number"
+                              value={field.maxFiles || ''}
+                              onChange={e => updateField(i, { maxFiles: e.target.value ? Number(e.target.value) : undefined })}
+                              className="w-16 px-2 py-1 rounded-lg bg-slate-50 border border-slate-100 text-[11px] font-medium text-slate-500 outline-none focus:bg-white transition-all"
+                              placeholder="∞"
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      <input
+                        type="text"
+                        placeholder="Description (Instructions for user)"
+                        value={field.description}
+                        onChange={e => updateField(i, { description: e.target.value })}
+                        className="w-full px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-100 text-[11px] font-medium text-slate-500 outline-none focus:bg-white transition-all"
+                      />
+
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Default Images {field.multiple && '(Multiple)'}</label>
+                        <div className="flex flex-wrap gap-2">
+                          {/* Existing/New Previews */}
+                          {(field.multiple ? (field.defaultValue ? (field.defaultValue.startsWith('[') ? JSON.parse(field.defaultValue) : [field.defaultValue]) : []) : (field.defaultValue ? [field.defaultValue] : [])).map((url: string, idx: number) => (
+                            <div key={idx} className="relative w-20 h-20 rounded-lg overflow-hidden border border-slate-200 group/img">
+                              <img src={url} className="w-full h-full object-cover" />
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (field.multiple) {
+                                    const urls = field.defaultValue?.startsWith('[') ? JSON.parse(field.defaultValue) : [field.defaultValue];
+                                    const newUrls = urls.filter((_: any, i: number) => i !== idx);
+                                    // Also remove corresponding file if it exists
+                                    const newFiles = field._files?.filter((_: any, i: number) => i !== idx);
+                                    updateField(i, { 
+                                      defaultValue: newUrls.length > 0 ? JSON.stringify(newUrls) : "",
+                                      _files: newFiles
+                                    });
+                                  } else {
+                                    updateField(i, { defaultValue: "", _files: [] });
+                                  }
+                                }}
+                                className="absolute top-1 right-1 p-1 bg-rose-500 text-white rounded-full opacity-0 group-hover/img:opacity-100 transition-opacity"
+                              >
+                                <X className="w-2.5 h-2.5" />
+                              </button>
+                            </div>
+                          ))}
+
+                          {/* Add Button */}
+                          {(!field.defaultValue || field.multiple) && (
+                            <div
+                              onClick={() => {
+                                const input = document.createElement('input');
+                                input.type = 'file';
+                                input.accept = 'image/*';
+                                input.multiple = !!field.multiple;
+                                input.onchange = (e: any) => {
+                                  const files = Array.from(e.target.files || []) as File[];
+                                  if (files.length > 0) {
+                                    const newPreviews = files.map(f => URL.createObjectURL(f));
+                                    if (field.multiple) {
+                                      const existingUrls = field.defaultValue?.startsWith('[') ? JSON.parse(field.defaultValue) : (field.defaultValue ? [field.defaultValue] : []);
+                                      updateField(i, { 
+                                        defaultValue: JSON.stringify([...existingUrls, ...newPreviews]), 
+                                        _files: [...(field._files || []), ...files] 
+                                      });
+                                    } else {
+                                      updateField(i, { defaultValue: newPreviews[0], _files: [files[0]] });
+                                    }
+                                  }
+                                };
+                                input.click();
+                              }}
+                              className="w-20 h-20 cursor-pointer rounded-lg border-2 border-dashed border-slate-200 hover:border-primary/40 hover:bg-primary/5 transition-all flex flex-col items-center justify-center text-slate-300 hover:text-primary"
+                            >
+                              <Plus className="w-5 h-5 mb-1" />
+                              <span className="text-[8px] font-bold uppercase">Add</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>)}
                 </div>
                 <div className="flex items-center gap-2 border-l border-slate-100 pl-2">

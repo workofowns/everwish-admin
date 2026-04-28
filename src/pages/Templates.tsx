@@ -25,9 +25,12 @@ interface FormField {
   label: string;
   type: "text" | "textarea" | "date" | "select" | "image";
   placeholder: string;
+  defaultValue?: string;
+  _files?: File[]; // plural storage for pending default image uploads
   required: boolean;
   options?: string[];
   multiple?: boolean;
+  maxFiles?: number;
   maxSizeMB?: number;
   description?: string;
 }
@@ -271,6 +274,53 @@ const Templates = () => {
       setIsUploading(false);
     }
 
+    // 1. Process form fields: Upload any pending default images
+    const processedFields = await Promise.all(newFields.map(async (step) => {
+      const processedStepFields = await Promise.all(step.fields.map(async (field: any) => {
+        let defaultValue = field.defaultValue;
+
+        // Handle multiple files if present
+        if (field._files && field._files.length > 0) {
+          setIsUploading(true);
+          try {
+            // Get current URLs (which include blob: URLs from new selections)
+            let urls = field.multiple 
+              ? (defaultValue?.startsWith('[') ? JSON.parse(defaultValue) : [defaultValue])
+              : [defaultValue];
+            
+            // Upload all pending files
+            const uploadedPermUrls = await Promise.all(field._files.map(f => uploadMedia(f, MEDIA_FOLDERS.TEMPLATES)));
+            
+            // Replace blob: URLs with permanent URLs in order
+            let uploadedIdx = 0;
+            const replacedUrls = urls.map((url: string) => {
+              if (typeof url === 'string' && url.startsWith('blob:') && uploadedIdx < uploadedPermUrls.length) {
+                return uploadedPermUrls[uploadedIdx++];
+              }
+              return url;
+            });
+
+            defaultValue = field.multiple ? JSON.stringify(replacedUrls) : replacedUrls[0];
+          } catch (err: any) {
+            toast.error(`Failed to upload default images for ${field.label}`);
+            throw err;
+          } finally {
+            setIsUploading(false);
+          }
+        }
+
+        // Return clean field object without internal _files property
+        const { _files, ...cleanField } = field;
+        return { ...cleanField, defaultValue };
+      }));
+      return { ...step, fields: processedStepFields };
+    })).catch((err) => {
+      console.error(err);
+      return null;
+    });
+
+    if (!processedFields) return; // Error occurred during upload
+
     const payload = {
       name: newName.trim(),
       templateName: newTemplateName.trim(),
@@ -279,7 +329,7 @@ const Templates = () => {
       slug: newName.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""),
       type: newType,
       componentKey: newComponentName.trim(),
-      formFields: newFields,
+      formFields: processedFields,
       subCategoryId: selectedSubCategoryId,
       priceId: newPriceId || null,
       isActive: newIsActive,
@@ -373,7 +423,7 @@ const Templates = () => {
                 initial={{ opacity: 0, scale: 0.95, y: 10 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                className="w-full max-w-5xl max-h-[92vh] bg-white rounded-2xl shadow-2xl flex flex-col border border-slate-200 overflow-hidden"
+                className="w-full max-w-7xl max-h-[93vh] bg-white rounded-2xl shadow-2xl flex flex-col border border-slate-200 overflow-hidden"
               >
                 {/* ── Sticky Header ── */}
                 <div className="flex items-center justify-between px-7 py-5 border-b border-slate-100 bg-white flex-shrink-0">
