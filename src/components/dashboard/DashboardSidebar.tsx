@@ -11,6 +11,7 @@ import {
   ShoppingBag,
   MessageSquare,
   Coins,
+  Image,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -23,6 +24,7 @@ const navItems = [
   { icon: ShoppingBag, label: "Orders", path: "/orders" },
   { icon: CreditCard, label: "Stripe",   path: "/stripe" },
   { icon: Users,      label: "Users",    path: "/users" },
+  { icon: Image,      label: "Images",   path: "/media" },
   { icon: Coins,      label: "Credits",  path: "/credits" },
   { icon: MessageSquare, label: "Contact", path: "/contact" },
   { icon: Settings,   label: "Settings", path: "/settings" },
