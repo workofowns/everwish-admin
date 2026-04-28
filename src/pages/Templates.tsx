@@ -65,6 +65,7 @@ interface Template {
   price_nickname?: string;
   is_active: boolean;
   tags: string[];
+  preview_images: string[];
 }
 
 interface TemplatesResponse {
@@ -114,6 +115,11 @@ const Templates = () => {
   // Holds the selected File locally — S3 upload deferred until Deploy
   const [pendingThumbnailFile, setPendingThumbnailFile] = useState<File | null>(null);
   const [localPreviewUrl, setLocalPreviewUrl] = useState<string>("");
+  
+  // Gallery/Preview Images
+  const [newPreviewImages, setNewPreviewImages] = useState<string[]>([]);
+  const [pendingPreviewFiles, setPendingPreviewFiles] = useState<File[]>([]);
+  const [previewLocalUrls, setPreviewLocalUrls] = useState<string[]>([]);
 
   const { data, isLoading } = useQuery<TemplatesResponse>({
     queryKey: ["adminTemplates", search],
@@ -155,6 +161,31 @@ const Templates = () => {
     setNewThumbnailUrl("");
     // Reset file input so same file can be re-selected if needed
     e.target.value = "";
+  };
+
+  const handlePreviewImagesSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    const newUrls = files.map(file => URL.createObjectURL(file));
+    setPendingPreviewFiles(prev => [...prev, ...files]);
+    setPreviewLocalUrls(prev => [...prev, ...newUrls]);
+    e.target.value = "";
+  };
+
+  const removePreviewImage = (index: number, isExisting: boolean) => {
+    if (isExisting) {
+      setNewPreviewImages(prev => prev.filter((_, i) => i !== index));
+    } else {
+      setPreviewLocalUrls(prev => {
+        const urlToRemove = prev[index];
+        if (urlToRemove && urlToRemove.startsWith('blob:')) {
+          URL.revokeObjectURL(urlToRemove);
+        }
+        return prev.filter((_, i) => i !== index);
+      });
+      setPendingPreviewFiles(prev => prev.filter((_, i) => i !== index));
+    }
   };
 
   const deleteMutation = useMutation({
@@ -230,6 +261,12 @@ const Templates = () => {
     setPendingThumbnailFile(null);
     if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl);
     setLocalPreviewUrl("");
+    
+    setNewPreviewImages([]);
+    previewLocalUrls.forEach(url => URL.revokeObjectURL(url));
+    setPreviewLocalUrls([]);
+    setPendingPreviewFiles([]);
+    
     setShowAddForm(false);
     setEditingId(null);
   };
@@ -268,6 +305,24 @@ const Templates = () => {
         setPendingThumbnailFile(null);
       } catch (err: any) {
         toast.error(err?.message || "Thumbnail upload failed");
+        setIsUploading(false);
+        return;
+      }
+      setIsUploading(false);
+    }
+
+    let previewImages = [...newPreviewImages];
+    if (pendingPreviewFiles.length > 0) {
+      setIsUploading(true);
+      try {
+        const uploadedUrls = await Promise.all(
+          pendingPreviewFiles.map(file => uploadMedia(file, MEDIA_FOLDERS.TEMPLATES))
+        );
+        previewImages = [...previewImages, ...uploadedUrls];
+        setPendingPreviewFiles([]);
+        setPreviewLocalUrls([]);
+      } catch (err: any) {
+        toast.error(err?.message || "Preview images upload failed");
         setIsUploading(false);
         return;
       }
@@ -333,7 +388,8 @@ const Templates = () => {
       subCategoryId: selectedSubCategoryId,
       priceId: newPriceId || null,
       isActive: newIsActive,
-      tags: newTags
+      tags: newTags,
+      previewImages
     };
 
     if (editingId) {
@@ -371,6 +427,7 @@ const Templates = () => {
     setNewIsActive(template.is_active);
     setSelectedCategoryId(template.category_id || "");
     setSelectedSubCategoryId(template.sub_category_id || "");
+    setNewPreviewImages(template.preview_images || []);
     setShowAddForm(true);
   };
 
@@ -630,6 +687,54 @@ const Templates = () => {
                           </div>
                         )}
                         <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" accept="image/*" />
+                      </div>
+                    </div>
+
+                    {/* Preview Images Gallery */}
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
+                        Gallery Preview Images
+                        <span className="text-[9px] font-normal lowercase">Multiple screenshots for user preview</span>
+                      </label>
+                      <div className="grid grid-cols-4 gap-3">
+                        {/* Existing/Pending Images */}
+                        {[...newPreviewImages, ...previewLocalUrls].map((url, idx) => {
+                          const isExisting = idx < newPreviewImages.length;
+                          return (
+                            <div key={url} className="relative aspect-square rounded-xl overflow-hidden border border-slate-200 group/gal">
+                              <img src={url} className="w-full h-full object-cover" alt={`Preview ${idx}`} />
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  console.log("Removing image at index:", isExisting ? idx : idx - newPreviewImages.length, "isExisting:", isExisting);
+                                  removePreviewImage(isExisting ? idx : idx - newPreviewImages.length, isExisting);
+                                }}
+                                className="absolute top-1.5 right-1.5 p-1.5 bg-rose-500 text-white rounded-lg opacity-0 group-hover/gal:opacity-100 transition-all shadow-lg scale-75 group-hover:scale-100 z-10 cursor-pointer"
+                              >
+                                <X className="w-3 h-3 pointer-events-none" />
+                              </button>
+                              {!isExisting && (
+                                <div className="absolute inset-0 bg-primary/10 flex items-center justify-center">
+                                  <div className="bg-white/90 backdrop-blur-sm px-2 py-0.5 rounded text-[8px] font-black text-primary uppercase shadow-sm">Pending</div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                        
+                        {/* Add Button */}
+                        <label className="aspect-square cursor-pointer rounded-xl border-2 border-dashed border-slate-200 hover:border-primary/40 hover:bg-primary/5 transition-all flex flex-col items-center justify-center text-slate-300 hover:text-primary group">
+                          <Plus className="w-6 h-6 mb-1 transition-transform group-hover:scale-110" />
+                          <span className="text-[9px] font-bold uppercase">Add Photo</span>
+                          <input 
+                            type="file" 
+                            multiple 
+                            accept="image/*" 
+                            className="hidden" 
+                            onChange={handlePreviewImagesSelect} 
+                          />
+                        </label>
                       </div>
                     </div>
 
