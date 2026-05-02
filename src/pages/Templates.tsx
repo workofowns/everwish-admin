@@ -289,9 +289,81 @@ const Templates = () => {
   };
 
   const submitTemplate = async () => {
-    if (!newName.trim() || !newComponentName.trim() || !selectedSubCategoryId) {
-      toast.error("Please fill required fields (Name, Component, Subcategory)");
+    // 1. Core Metadata Validation
+    const trimmedName = newName.trim();
+    const trimmedTemplateName = newTemplateName.trim();
+    const trimmedComponentKey = newComponentName.trim();
+    const slug = trimmedName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+
+    if (!trimmedName) {
+      toast.error("Template Name is required");
       return;
+    }
+    if (!slug) {
+      toast.error("Template Name must contain alphanumeric characters (for URL slug)");
+      return;
+    }
+    if (!trimmedTemplateName) {
+      toast.error("Display Label is required");
+      return;
+    }
+    if (!trimmedComponentKey) {
+      toast.error("Component Key is required (e.g. BirthdayClassic)");
+      return;
+    }
+    if (!selectedSubCategoryId) {
+      toast.error("Please select a Category and Subcategory");
+      return;
+    }
+    if (!newThumbnailUrl && !pendingThumbnailFile) {
+      toast.error("Cover Thumbnail image is required");
+      return;
+    }
+
+    // 2. Form Structure Validation (Steps & Slots)
+    if (newFields.length === 0) {
+      toast.error("At least one form step is required");
+      return;
+    }
+
+    for (let i = 0; i < newFields.length; i++) {
+      const step = newFields[i];
+      const stepTitle = step.title.trim();
+      
+      if (!stepTitle) {
+        toast.error(`Step ${i + 1} is missing a title`);
+        return;
+      }
+      if (step.fields.length === 0) {
+        toast.error(`Step "${stepTitle}" must have at least one slot (field)`);
+        return;
+      }
+
+      for (let j = 0; j < step.fields.length; j++) {
+        const field = step.fields[j];
+        const fieldLabel = field.label.trim();
+        const fieldName = field.name.trim();
+
+        if (!fieldLabel) {
+          toast.error(`Slot ${j + 1} in step "${stepTitle}" is missing a label`);
+          return;
+        }
+        if (!fieldName) {
+          toast.error(`Slot "${fieldLabel}" in step "${stepTitle}" is missing a unique key (name)`);
+          return;
+        }
+        
+        // Ensure name (key) is safe for JSON/DB keys
+        if (!/^[a-z0-9_]+$/i.test(fieldName)) {
+          toast.error(`Slot key "${fieldName}" in "${stepTitle}" must only contain letters, numbers, and underscores`);
+          return;
+        }
+
+        if (field.type === "select" && (!field.options || field.options.length === 0)) {
+          toast.error(`Select slot "${fieldLabel}" in "${stepTitle}" must have at least one option`);
+          return;
+        }
+      }
     }
 
     let thumbnailUrl = newThumbnailUrl.trim();
@@ -339,7 +411,7 @@ const Templates = () => {
           setIsUploading(true);
           try {
             // Get current URLs (which include blob: URLs from new selections)
-            let urls = field.multiple 
+            const urls = field.multiple 
               ? (defaultValue?.startsWith('[') ? JSON.parse(defaultValue) : [defaultValue])
               : [defaultValue];
             
@@ -378,13 +450,13 @@ const Templates = () => {
     if (!processedFields) return; // Error occurred during upload
 
     const payload = {
-      name: newName.trim(),
-      templateName: newTemplateName.trim(),
+      name: trimmedName,
+      templateName: trimmedTemplateName,
       description: newDescription.trim(),
       thumbnailUrl,
-      slug: newName.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""),
+      slug,
       type: newType,
-      componentKey: newComponentName.trim(),
+      componentKey: trimmedComponentKey,
       formFields: processedFields,
       subCategoryId: selectedSubCategoryId,
       priceId: newPriceId || null,

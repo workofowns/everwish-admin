@@ -26,7 +26,7 @@ const navItems = [
   { icon: CreditCard, label: "Stripe",   path: "/stripe" },
   { icon: IndianRupee, label: "Razorpay", path: "/razorpay" },
   { icon: Users,      label: "Users",    path: "/users" },
-  { icon: Image,      label: "Images",   path: "/media" },
+  { icon: Image,      label: "S3",       path: "/media" },
   { icon: Coins,      label: "Credits",  path: "/credits" },
   { icon: MessageSquare, label: "Contact", path: "/contact" },
   { icon: Settings,   label: "Settings", path: "/settings" },

@@ -26,6 +26,7 @@ export interface FormField {
   maxSizeMB?: number;
   description?: string;
   s3Folder?: string;
+  maxLength?: number;
 }
 
 interface FieldBuilderProps {
@@ -47,7 +48,6 @@ const FieldBuilder = ({ fields, onChange }: FieldBuilderProps) => {
   });
 
   const allFolders = Array.from(new Set([
-    "templates", "categories", "sub-categories", "wishes", "users/profiles", "users/covers",
     ...(dynamicFolders || []),
     ...localFolders
   ]));
@@ -57,7 +57,7 @@ const FieldBuilder = ({ fields, onChange }: FieldBuilderProps) => {
       name: `field_${Date.now()}`,
       label: "",
       type: "text",
-      placeholder: "Value",
+      placeholder: "placeholder",
       required: true,
     }]);
   };
@@ -132,7 +132,14 @@ const FieldBuilder = ({ fields, onChange }: FieldBuilderProps) => {
                   <div className="col-span-2">
                     <select
                       value={field.type}
-                      onChange={e => updateField(i, { type: e.target.value as FormField["type"] })}
+                      onChange={e => {
+                        const newType = e.target.value as FormField["type"];
+                        const update: Partial<FormField> = { type: newType };
+                        if (newType === "date" && !field.defaultValue) {
+                          update.defaultValue = new Date().toISOString().split('T')[0];
+                        }
+                        updateField(i, update);
+                      }}
                       className="w-full px-2 py-1.5 rounded-lg bg-slate-50 border border-slate-100 text-[9px] font-bold uppercase text-slate-500 outline-none cursor-pointer"
                     >
                       {fieldTypes.map(t => <option key={t} value={t}>{t}</option>)}
@@ -156,6 +163,18 @@ const FieldBuilder = ({ fields, onChange }: FieldBuilderProps) => {
                           placeholder="Default Value"
                         />
                       </div>
+                      {(field.type === "text" || field.type === "textarea") && (
+                        <div className="w-20">
+                          <input
+                            type="number"
+                            value={field.maxLength || ""}
+                            onChange={e => updateField(i, { maxLength: e.target.value ? Number(e.target.value) : undefined })}
+                            className="w-full px-3 py-1.5 rounded-lg bg-amber-50/50 border border-amber-100 text-[11px] font-medium text-amber-700 outline-none focus:bg-white transition-all placeholder:text-amber-300"
+                            placeholder="Max L."
+                            title="Maximum Characters"
+                          />
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -372,39 +391,56 @@ const FieldBuilder = ({ fields, onChange }: FieldBuilderProps) => {
 
               {/* Select Options - Compact Style */}
               {field.type === "select" && (
-                <div className="mt-3 pt-3 border-t border-slate-50 flex items-center gap-2 flex-wrap">
-                  <div className="flex items-center gap-1 mr-1">
-                    <Layers className="w-2.5 h-2.5 text-slate-300" />
-                    <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">Choices:</span>
-                  </div>
-                  {field.options?.map((opt, oi) => (
-                    <div key={oi} className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-md border border-slate-100">
-                      <span className="text-[10px] font-bold text-slate-600">{opt}</span>
-                      <button onClick={() => removeOption(i, oi)} className="text-slate-300 hover:text-rose-500">
-                        <X className="w-2.5 h-2.5" />
-                      </button>
-                    </div>
-                  ))}
-                  {addingOption === i ? (
-                    <div className="flex items-center gap-1 animate-in zoom-in-95 duration-200">
+                <div className="mt-3 pt-3 border-t border-slate-50 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <label className="flex items-center cursor-pointer group/mult">
                       <input
-                        value={newOption}
-                        onChange={e => setNewOption(e.target.value)}
-                        onKeyDown={e => e.key === "Enter" && addOption(i)}
-                        className="px-2 py-1 bg-white border border-primary/20 rounded text-[10px] font-bold outline-none w-24 shadow-sm"
-                        autoFocus
+                        type="checkbox"
+                        checked={field.multiple}
+                        onChange={e => updateField(i, { multiple: e.target.checked })}
+                        className="hidden"
                       />
-                      <button onClick={() => addOption(i)} className="p-1 bg-primary text-white rounded shadow-sm hover:opacity-90"><Check className="w-2.5 h-2.5" /></button>
-                      <button onClick={() => setAddingOption(null)} className="p-1 text-slate-400"><X className="w-2.5 h-2.5" /></button>
+                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all ${field.multiple ? 'bg-primary text-white shadow-sm' : 'bg-slate-50 text-slate-200 border border-slate-100'}`}>
+                        <Check className={`w-3.5 h-3.5 transition-transform ${field.multiple ? 'scale-100' : 'scale-0'}`} />
+                      </div>
+                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter ml-2">Allow Multiple</span>
+                    </label>
+                  </div>
+
+                  <div className="flex-1 flex items-center gap-2 flex-wrap justify-end">
+                    <div className="flex items-center gap-1 mr-1">
+                      <Layers className="w-2.5 h-2.5 text-slate-300" />
+                      <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">Choices:</span>
                     </div>
-                  ) : (
-                    <button
-                      onClick={() => setAddingOption(i)}
-                      className="text-[9px] font-bold text-primary hover:underline uppercase tracking-tighter"
-                    >
-                      + Add Option
-                    </button>
-                  )}
+                    {field.options?.map((opt, oi) => (
+                      <div key={oi} className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-md border border-slate-100">
+                        <span className="text-[10px] font-bold text-slate-600">{opt}</span>
+                        <button onClick={() => removeOption(i, oi)} className="text-slate-300 hover:text-rose-500">
+                          <X className="w-2.5 h-2.5" />
+                        </button>
+                      </div>
+                    ))}
+                    {addingOption === i ? (
+                      <div className="flex items-center gap-1 animate-in zoom-in-95 duration-200">
+                        <input
+                          value={newOption}
+                          onChange={e => setNewOption(e.target.value)}
+                          onKeyDown={e => e.key === "Enter" && addOption(i)}
+                          className="px-2 py-1 bg-white border border-primary/20 rounded text-[10px] font-bold outline-none w-24 shadow-sm"
+                          autoFocus
+                        />
+                        <button onClick={() => addOption(i)} className="p-1 bg-primary text-white rounded shadow-sm hover:opacity-90"><Check className="w-2.5 h-2.5" /></button>
+                        <button onClick={() => setAddingOption(null)} className="p-1 text-slate-400"><X className="w-2.5 h-2.5" /></button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setAddingOption(i)}
+                        className="text-[9px] font-bold text-primary hover:underline uppercase tracking-tighter"
+                      >
+                        + Add Option
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
             </motion.div>
