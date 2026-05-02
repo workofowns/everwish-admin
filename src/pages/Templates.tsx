@@ -344,7 +344,8 @@ const Templates = () => {
               : [defaultValue];
             
             // Upload all pending files
-            const uploadedPermUrls = await Promise.all(field._files.map(f => uploadMedia(f, MEDIA_FOLDERS.TEMPLATES)));
+            const destinationFolder = field.s3Folder || MEDIA_FOLDERS.TEMPLATES;
+            const uploadedPermUrls = await Promise.all(field._files.map(f => uploadMedia(f, destinationFolder)));
             
             // Replace blob: URLs with permanent URLs in order
             let uploadedIdx = 0;
@@ -502,7 +503,7 @@ const Templates = () => {
                 <div className="flex flex-col lg:flex-row flex-1 min-h-0 divide-y lg:divide-y-0 lg:divide-x divide-slate-100">
 
                   {/* LEFT — Core config */}
-                  <div className="lg:w-[52%] overflow-y-auto custom-scrollbar p-7 space-y-5">
+                  <div className="lg:w-[50%] overflow-y-auto custom-scrollbar p-7 space-y-5">
 
                     {/* Tags Multi-select */}
                     <div className="space-y-1.5">

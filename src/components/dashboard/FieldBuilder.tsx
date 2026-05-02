@@ -1,6 +1,16 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Trash2, GripVertical, Check, X, Layers, Settings2, Upload } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { fetchApi } from "@/lib/api";
+import { Plus, Trash2, GripVertical, Check, X, Layers, Settings2, Upload, Database, FolderPlus, Search, ChevronDown } from "lucide-react";
+import MediaSelector from "./MediaSelector";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export interface FormField {
   name: string;
@@ -15,6 +25,7 @@ export interface FormField {
   maxFiles?: number;
   maxSizeMB?: number;
   description?: string;
+  s3Folder?: string;
 }
 
 interface FieldBuilderProps {
@@ -27,6 +38,19 @@ const fieldTypes = ["text", "textarea", "date", "select", "image"] as const;
 const FieldBuilder = ({ fields, onChange }: FieldBuilderProps) => {
   const [addingOption, setAddingOption] = useState<number | null>(null);
   const [newOption, setNewOption] = useState("");
+  const [mediaSelectorOpen, setMediaSelectorOpen] = useState<number | null>(null);
+  const [localFolders, setLocalFolders] = useState<string[]>([]);
+
+  const { data: dynamicFolders } = useQuery<string[]>({
+    queryKey: ["adminMediaFolders"],
+    queryFn: () => fetchApi("/media/folders"),
+  });
+
+  const allFolders = Array.from(new Set([
+    "templates", "categories", "sub-categories", "wishes", "users/profiles", "users/covers",
+    ...(dynamicFolders || []),
+    ...localFolders
+  ]));
 
   const addField = () => {
     onChange([...fields, {
@@ -183,68 +207,145 @@ const FieldBuilder = ({ fields, onChange }: FieldBuilderProps) => {
                         className="w-full px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-100 text-[11px] font-medium text-slate-500 outline-none focus:bg-white transition-all"
                       />
 
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Default Images {field.multiple && '(Multiple)'}</label>
-                        <div className="flex flex-wrap gap-2">
-                          {/* Existing/New Previews */}
-                          {(field.multiple ? (field.defaultValue ? (field.defaultValue.startsWith('[') ? JSON.parse(field.defaultValue) : [field.defaultValue]) : []) : (field.defaultValue ? [field.defaultValue] : [])).map((url: string, idx: number) => (
-                            <div key={idx} className="relative w-20 h-20 rounded-lg overflow-hidden border border-slate-200 group/img">
-                              <img src={url} className="w-full h-full object-cover" />
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (field.multiple) {
-                                    const urls = field.defaultValue?.startsWith('[') ? JSON.parse(field.defaultValue) : [field.defaultValue];
-                                    const newUrls = urls.filter((_: any, i: number) => i !== idx);
-                                    // Also remove corresponding file if it exists
-                                    const newFiles = field._files?.filter((_: any, i: number) => i !== idx);
-                                    updateField(i, { 
-                                      defaultValue: newUrls.length > 0 ? JSON.stringify(newUrls) : "",
-                                      _files: newFiles
-                                    });
-                                  } else {
-                                    updateField(i, { defaultValue: "", _files: [] });
-                                  }
-                                }}
-                                className="absolute top-1 right-1 p-1 bg-rose-500 text-white rounded-full opacity-0 group-hover/img:opacity-100 transition-opacity"
+                      <div className="space-y-4 pt-2">
+                        {/* S3 Storage Path Control */}
+                        <div className="flex flex-col md:flex-row md:items-end gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                          <div className="flex-1 space-y-1.5">
+                            <label className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-400 flex items-center gap-2">
+                              <Database className="w-3 h-3" /> Storage Vault Path
+                            </label>
+                            <div className="relative group">
+                              <Select 
+                                value={field.s3Folder || "templates"} 
+                                onValueChange={v => updateField(i, { s3Folder: v })}
                               >
-                                <X className="w-2.5 h-2.5" />
-                              </button>
+                                <SelectTrigger className="w-full h-9 px-3 rounded-lg bg-white border-slate-200 text-[11px] font-bold text-slate-700 outline-none">
+                                  <SelectValue placeholder="Select folder" />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-xl border-slate-200 shadow-xl">
+                                  {allFolders.map(folder => (
+                                    <SelectItem key={folder} value={folder} className="text-[11px] font-medium uppercase tracking-wider">
+                                      {folder}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             </div>
-                          ))}
-
-                          {/* Add Button */}
-                          {(!field.defaultValue || field.multiple) && (
-                            <div
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
                               onClick={() => {
-                                const input = document.createElement('input');
-                                input.type = 'file';
-                                input.accept = 'image/*';
-                                input.multiple = !!field.multiple;
-                                input.onchange = (e: any) => {
-                                  const files = Array.from(e.target.files || []) as File[];
-                                  if (files.length > 0) {
-                                    const newPreviews = files.map(f => URL.createObjectURL(f));
+                                const newFolder = window.prompt("Enter new folder name (e.g. promotional-campaigns):");
+                                if (newFolder) {
+                                  const formatted = newFolder.toLowerCase().replace(/[^a-z0-9-/]/g, '-');
+                                  setLocalFolders(prev => [...prev, formatted]);
+                                  updateField(i, { s3Folder: formatted });
+                                }
+                              }}
+                              className="p-2.5 rounded-lg bg-white border border-slate-200 text-slate-400 hover:text-primary hover:border-primary/20 transition-all shadow-sm"
+                              title="Create New Folder"
+                            >
+                              <FolderPlus className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Default Images {field.multiple && '(Multiple)'}</label>
+                            <div className="flex gap-2">
+                               <button 
+                                 type="button"
+                                 onClick={() => setMediaSelectorOpen(i)}
+                                 className="flex items-center gap-1.5 text-[9px] font-black text-slate-500 uppercase tracking-widest hover:text-primary transition-colors"
+                               >
+                                 <Search className="w-3 h-3" /> Browse Vault
+                               </button>
+                            </div>
+                          </div>
+                          
+                          <div className="flex flex-wrap gap-2">
+                            {/* Existing/New Previews */}
+                            {(field.multiple ? (field.defaultValue ? (field.defaultValue.startsWith('[') ? JSON.parse(field.defaultValue) : [field.defaultValue]) : []) : (field.defaultValue ? [field.defaultValue] : [])).map((url: string, idx: number) => (
+                              <div key={idx} className="relative w-20 h-20 rounded-lg overflow-hidden border border-slate-200 group/img">
+                                <img src={url} className="w-full h-full object-cover" />
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
                                     if (field.multiple) {
-                                      const existingUrls = field.defaultValue?.startsWith('[') ? JSON.parse(field.defaultValue) : (field.defaultValue ? [field.defaultValue] : []);
+                                      const urls = field.defaultValue?.startsWith('[') ? JSON.parse(field.defaultValue) : [field.defaultValue];
+                                      const newUrls = urls.filter((_: any, i: number) => i !== idx);
+                                      // Also remove corresponding file if it exists
+                                      const newFiles = field._files?.filter((_: any, i: number) => i !== idx);
                                       updateField(i, { 
-                                        defaultValue: JSON.stringify([...existingUrls, ...newPreviews]), 
-                                        _files: [...(field._files || []), ...files] 
+                                        defaultValue: newUrls.length > 0 ? JSON.stringify(newUrls) : "",
+                                        _files: newFiles
                                       });
                                     } else {
-                                      updateField(i, { defaultValue: newPreviews[0], _files: [files[0]] });
+                                      updateField(i, { defaultValue: "", _files: [] });
                                     }
-                                  }
-                                };
-                                input.click();
-                              }}
-                              className="w-20 h-20 cursor-pointer rounded-lg border-2 border-dashed border-slate-200 hover:border-primary/40 hover:bg-primary/5 transition-all flex flex-col items-center justify-center text-slate-300 hover:text-primary"
-                            >
-                              <Plus className="w-5 h-5 mb-1" />
-                              <span className="text-[8px] font-bold uppercase">Add</span>
-                            </div>
-                          )}
+                                  }}
+                                  className="absolute top-1 right-1 p-1 bg-rose-500 text-white rounded-full opacity-0 group-hover/img:opacity-100 transition-opacity"
+                                >
+                                  <X className="w-2.5 h-2.5" />
+                                </button>
+                              </div>
+                            ))}
+
+                            {/* Add Button */}
+                            {(!field.defaultValue || field.multiple) && (
+                              <div
+                                onClick={() => {
+                                  const input = document.createElement('input');
+                                  input.type = 'file';
+                                  input.accept = 'image/*';
+                                  input.multiple = !!field.multiple;
+                                  input.onchange = (e: any) => {
+                                    const files = Array.from(e.target.files || []) as File[];
+                                    if (files.length > 0) {
+                                      const newPreviews = files.map(f => URL.createObjectURL(f));
+                                      if (field.multiple) {
+                                        const existingUrls = field.defaultValue?.startsWith('[') ? JSON.parse(field.defaultValue) : (field.defaultValue ? [field.defaultValue] : []);
+                                        updateField(i, { 
+                                          defaultValue: JSON.stringify([...existingUrls, ...newPreviews]), 
+                                          _files: [...(field._files || []), ...files] 
+                                        });
+                                      } else {
+                                        updateField(i, { defaultValue: newPreviews[0], _files: [files[0]] });
+                                      }
+                                    }
+                                  };
+                                  input.click();
+                                }}
+                                className="w-20 h-20 cursor-pointer rounded-lg border-2 border-dashed border-slate-200 hover:border-primary/40 hover:bg-primary/5 transition-all flex flex-col items-center justify-center text-slate-300 hover:text-primary shadow-sm"
+                              >
+                                <Upload className="w-5 h-5 mb-1" />
+                                <span className="text-[8px] font-bold uppercase">Upload</span>
+                              </div>
+                            )}
+                          </div>
                         </div>
+
+                        {/* Media Selector Modal Integration */}
+                        <MediaSelector 
+                          isOpen={mediaSelectorOpen === i}
+                          onClose={() => setMediaSelectorOpen(null)}
+                          onSelect={(url) => {
+                            if (field.multiple) {
+                              const existingUrls = field.defaultValue?.startsWith('[') ? JSON.parse(field.defaultValue) : (field.defaultValue ? [field.defaultValue] : []);
+                              if (!existingUrls.includes(url)) {
+                                updateField(i, { 
+                                  defaultValue: JSON.stringify([...existingUrls, url])
+                                });
+                              }
+                            } else {
+                              updateField(i, { defaultValue: url, _files: [] });
+                            }
+                            setMediaSelectorOpen(null);
+                          }}
+                        />
                       </div>
                     </div>)}
                 </div>

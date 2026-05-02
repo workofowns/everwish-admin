@@ -29,6 +29,11 @@ const Media = () => {
     queryFn: () => fetchApi(`/media?folder=${selectedFolder === "all" ? "" : selectedFolder}`),
   });
 
+  const { data: dynamicFolders } = useQuery<string[]>({
+    queryKey: ["mediaFolders"],
+    queryFn: () => fetchApi("/media/folders"),
+  });
+
   const deleteMutation = useMutation({
     mutationFn: (key: string) => fetchApi(`/media?key=${encodeURIComponent(key)}`, { method: "DELETE" }),
     onSuccess: () => {
@@ -54,11 +59,7 @@ const Media = () => {
 
   const folders = [
     { id: "all", label: "All Assets" },
-    { id: "categories", label: "Categories" },
-    { id: "sub-categories", label: "Sub-Categories" },
-    { id: "templates", label: "Templates" },
-    { id: "wishes", label: "Wishes" },
-    { id: "users", label: "User Content" },
+    ...(dynamicFolders || []).map(f => ({ id: f, label: f.charAt(0).toUpperCase() + f.slice(1) }))
   ];
 
   const filtered = (objects || [])

@@ -12,7 +12,7 @@ export const MEDIA_FOLDERS = {
   USER_COVERS: "users/covers",
 } as const;
 
-export type MediaFolder = typeof MEDIA_FOLDERS[keyof typeof MEDIA_FOLDERS];
+export type MediaFolder = typeof MEDIA_FOLDERS[keyof typeof MEDIA_FOLDERS] | (string & {});
 
 // ── General JSON API utility ──────────────────────────────────────────────────
 export const fetchApi = async (endpoint: string, options: RequestInit = {}) => {
