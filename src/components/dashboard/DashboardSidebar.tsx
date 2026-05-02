@@ -12,6 +12,7 @@ import {
   MessageSquare,
   Coins,
   Image,
+  IndianRupee,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -23,6 +24,7 @@ const navItems = [
   { icon: Sparkles, label: "Wishes", path: "/wishes" },
   { icon: ShoppingBag, label: "Orders", path: "/orders" },
   { icon: CreditCard, label: "Stripe",   path: "/stripe" },
+  { icon: IndianRupee, label: "Razorpay", path: "/razorpay" },
   { icon: Users,      label: "Users",    path: "/users" },
   { icon: Image,      label: "Images",   path: "/media" },
   { icon: Coins,      label: "Credits",  path: "/credits" },

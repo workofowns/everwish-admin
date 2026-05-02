@@ -24,6 +24,11 @@ import StripeSubscriptions from "./pages/stripe/Subscriptions";
 import BillingEvents from "./pages/stripe/BillingEvents";
 import StripeManagement from "./pages/stripe/StripeManagement";
 import MembershipPlans from "./pages/stripe/MembershipPlans";
+import RazorpayDashboard from "./pages/razorpay/Dashboard";
+import RazorpayGlobalPrices from "./pages/razorpay/GlobalPrices";
+import RazorpayProducts from "./pages/razorpay/Products";
+import RazorpaySubscriptions from "./pages/razorpay/Subscriptions";
+import RazorpayPlans from "./pages/razorpay/Plans";
 
 const queryClient = new QueryClient();
 
@@ -57,6 +62,11 @@ const App = () => (
           <Route path="/stripe/global-prices" element={<RequireAuth><StripePrices /></RequireAuth>} />
           <Route path="/stripe/plans" element={<RequireAuth><MembershipPlans /></RequireAuth>} />
           <Route path="/stripe-products" element={<Navigate to="/stripe" replace />} />
+          <Route path="/razorpay" element={<RequireAuth><RazorpayDashboard /></RequireAuth>} />
+          <Route path="/razorpay/products" element={<RequireAuth><RazorpayProducts /></RequireAuth>} />
+          <Route path="/razorpay/global-prices" element={<RequireAuth><RazorpayGlobalPrices /></RequireAuth>} />
+          <Route path="/razorpay/plans" element={<RequireAuth><RazorpayPlans /></RequireAuth>} />
+          <Route path="/razorpay/subscriptions" element={<RequireAuth><RazorpaySubscriptions /></RequireAuth>} />
           <Route path="/contact" element={<RequireAuth><ContactMessages /></RequireAuth>} />
           <Route path="/users" element={<RequireAuth><UsersPage /></RequireAuth>} />
           <Route path="/credits" element={<RequireAuth><CreditsPage /></RequireAuth>} />
