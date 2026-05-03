@@ -10,6 +10,7 @@ export const MEDIA_FOLDERS = {
   WISHES: "wishes",
   USER_PROFILES: "users/profiles",
   USER_COVERS: "users/covers",
+  MUSIC_THUMBNAILS: "music-thumbnails",
 } as const;
 
 export type MediaFolder = typeof MEDIA_FOLDERS[keyof typeof MEDIA_FOLDERS] | (string & {});

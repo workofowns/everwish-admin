@@ -5,7 +5,8 @@ import {
   Search, Trash2, Image as ImageIcon, 
   ExternalLink, Database, HardDrive,
   RefreshCw, X, Check, Download as DownloadIcon,
-  Upload as UploadIcon, Plus, FolderPlus, Folder, ChevronDown
+  Upload as UploadIcon, Plus, FolderPlus, Folder, ChevronDown,
+  Music, FileAudio
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -247,7 +248,17 @@ const S3ImageManager = () => {
           {filtered.map((obj, i) => (
             <div key={obj.key} className="group flex flex-col transition-all duration-500 hover:-translate-y-2">
               <div className="aspect-[4/5] relative bg-white rounded-[2.5rem] overflow-hidden border border-slate-100 shadow-sm group-hover:shadow-2xl group-hover:border-primary/20 transition-all duration-500">
-                 <img src={obj.url} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" alt="" />
+                 {obj.key.match(/\.(mp3|wav|ogg|m4a|aac)$/i) ? (
+                   <div className="w-full h-full bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center group-hover:from-primary/5 group-hover:to-primary/10 transition-colors duration-500">
+                      <div className="relative">
+                        <Music className="w-16 h-16 text-slate-200 group-hover:text-primary/20 transition-all duration-500 group-hover:scale-110" />
+                        <FileAudio className="absolute -bottom-2 -right-2 w-8 h-8 text-slate-100 group-hover:text-primary/10 transition-colors" />
+                      </div>
+                   </div>
+                 ) : (
+                   <img src={obj.url} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" alt="" />
+                 )}
+
                  
                  {/* Overlay: Actions */}
                  <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-all duration-500 backdrop-blur-[3px] flex items-center justify-center gap-3">
@@ -416,9 +427,10 @@ const S3ImageManager = () => {
                           onChange={(e) => setUploadFolder(e.target.value)}
                           className="w-full px-5 py-4 rounded-2xl bg-slate-50 border border-slate-200 text-sm font-bold text-slate-700 outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary/20 transition-all appearance-none cursor-pointer"
                         >
-                          {["templates", "categories", "sub-categories", "wishes", "users/profiles", "users/covers", ...(dynamicFolders || [])].map(folder => (
+                          {["templates", "categories", "sub-categories", "wishes", "users/profiles", "users/covers", "music-thumbnails", ...(dynamicFolders || [])].map(folder => (
                             <option key={folder} value={folder}>{folder}</option>
                           ))}
+
                         </select>
                         <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
                           <ChevronDown className="w-4 h-4" />
