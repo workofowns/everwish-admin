@@ -2,8 +2,9 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { fetchApi } from "@/lib/api";
-import { Plus, Trash2, GripVertical, Check, X, Layers, Settings2, Upload, Database, FolderPlus, Search, ChevronDown } from "lucide-react";
+import { Plus, Trash2, GripVertical, Check, X, Layers, Settings2, Upload, Database, FolderPlus, Search, ChevronDown, Music as MusicIcon } from "lucide-react";
 import MediaSelector from "./MediaSelector";
+import MusicSelector from "./MusicSelector";
 import {
   Select,
   SelectContent,
@@ -15,7 +16,7 @@ import {
 export interface FormField {
   name: string;
   label: string;
-  type: "text" | "textarea" | "date" | "select" | "image";
+  type: "text" | "textarea" | "date" | "select" | "image" | "music";
   placeholder: string;
   defaultValue?: string;
   _files?: File[]; // plural storage for pending default image uploads
@@ -27,6 +28,7 @@ export interface FormField {
   description?: string;
   s3Folder?: string;
   maxLength?: number;
+  musicCategories?: string[];
 }
 
 interface FieldBuilderProps {
@@ -34,12 +36,13 @@ interface FieldBuilderProps {
   onChange: (fields: FormField[]) => void;
 }
 
-const fieldTypes = ["text", "textarea", "date", "select", "image"] as const;
+const fieldTypes = ["text", "textarea", "date", "select", "image", "music"] as const;
 
 const FieldBuilder = ({ fields, onChange }: FieldBuilderProps) => {
   const [addingOption, setAddingOption] = useState<number | null>(null);
   const [newOption, setNewOption] = useState("");
   const [mediaSelectorOpen, setMediaSelectorOpen] = useState<number | null>(null);
+  const [musicSelectorOpen, setMusicSelectorOpen] = useState<number | null>(null);
   const [localFolders, setLocalFolders] = useState<string[]>([]);
 
   const { data: dynamicFolders } = useQuery<string[]>({
@@ -51,6 +54,12 @@ const FieldBuilder = ({ fields, onChange }: FieldBuilderProps) => {
     ...(dynamicFolders || []),
     ...localFolders
   ]));
+
+  const { data: musicCatsData } = useQuery<{ success: boolean; categories: string[] }>({
+    queryKey: ["adminMusicCategories"],
+    queryFn: () => fetchApi("/music/categories"),
+  });
+  const allMusicCategories = musicCatsData?.categories || [];
 
   const addField = () => {
     onChange([...fields, {
@@ -145,7 +154,7 @@ const FieldBuilder = ({ fields, onChange }: FieldBuilderProps) => {
                       {fieldTypes.map(t => <option key={t} value={t}>{t}</option>)}
                     </select>
                   </div>
-                  {field.type !== "image" && (
+                  {field.type !== "image" && field.type !== "music" && (
                     <div className="flex gap-2 flex-1">
                       <div className="flex-1">
                         <input
@@ -367,6 +376,98 @@ const FieldBuilder = ({ fields, onChange }: FieldBuilderProps) => {
                         />
                       </div>
                     </div>)}
+
+                  {field.type === "music" && (
+                    <div className="col-span-3 space-y-4">
+                      <div className="flex flex-col md:flex-row gap-4">
+                        {/* Default Music Selection */}
+                        <div className="flex-1 space-y-2">
+                          <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Default Music</label>
+                          <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                            <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center border border-indigo-100 shrink-0">
+                              <MusicIcon className="w-5 h-5 text-indigo-500" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[11px] font-bold text-slate-700 truncate">
+                                {field.defaultValue || "No default selected"}
+                              </p>
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setMusicSelectorOpen(i)}
+                                className="text-[9px] font-black text-indigo-500 uppercase tracking-widest hover:underline"
+                              >
+                                Browse
+                              </button>
+                              {field.defaultValue && (
+                                <button
+                                  type="button"
+                                  onClick={() => updateField(i, { defaultValue: "" })}
+                                  className="text-[9px] font-black text-rose-500 uppercase tracking-widest hover:underline"
+                                >
+                                  Remove
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Category Restrictions */}
+                        <div className="flex-1 space-y-2">
+                          <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Allowed Categories</label>
+                          <div className="flex flex-wrap gap-2">
+                            {(field.musicCategories || []).map((cat, ci) => (
+                              <div key={ci} className="flex items-center gap-1.5 bg-indigo-50 px-2 py-1 rounded-md border border-indigo-100">
+                                <span className="text-[10px] font-bold text-indigo-700">{cat}</span>
+                                <button 
+                                  onClick={() => updateField(i, { musicCategories: field.musicCategories?.filter((_, idx) => idx !== ci) })}
+                                  className="text-indigo-300 hover:text-rose-500"
+                                >
+                                  <X className="w-2.5 h-2.5" />
+                                </button>
+                              </div>
+                            ))}
+                            <div className="relative">
+                              <select
+                                className="px-2 py-1 bg-white border border-slate-200 rounded text-[10px] font-bold outline-none cursor-pointer hover:border-primary/20"
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  if (val && !(field.musicCategories || []).includes(val)) {
+                                    updateField(i, { musicCategories: [...(field.musicCategories || []), val] });
+                                  }
+                                  e.target.value = "";
+                                }}
+                                value=""
+                              >
+                                <option value="" disabled>+ Add Category</option>
+                                {allMusicCategories.filter(c => !(field.musicCategories || []).includes(c)).map(c => (
+                                  <option key={c} value={c}>{c}</option>
+                                ))}
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <input
+                        type="text"
+                        placeholder="Description (Instructions for user)"
+                        value={field.description}
+                        onChange={e => updateField(i, { description: e.target.value })}
+                        className="w-full px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-100 text-[11px] font-medium text-slate-500 outline-none focus:bg-white transition-all"
+                      />
+
+                      <MusicSelector
+                        isOpen={musicSelectorOpen === i}
+                        onClose={() => setMusicSelectorOpen(null)}
+                        onSelect={(m) => {
+                          updateField(i, { defaultValue: m.name }); // Store name or ID/URL as default
+                          setMusicSelectorOpen(null);
+                        }}
+                      />
+                    </div>
+                  )}
                 </div>
                 <div className="flex items-center gap-2 border-l border-slate-100 pl-2">
                   <label className="flex items-center cursor-pointer group/req">
