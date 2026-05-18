@@ -23,6 +23,7 @@ export interface FormField {
   required: boolean;
   options?: string[];
   multiple?: boolean;
+  searchable?: boolean;
   maxFiles?: number;
   maxSizeMB?: number;
   description?: string;
@@ -505,6 +506,19 @@ const FieldBuilder = ({ fields, onChange }: FieldBuilderProps) => {
                         <Check className={`w-3.5 h-3.5 transition-transform ${field.multiple ? 'scale-100' : 'scale-0'}`} />
                       </div>
                       <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter ml-2">Allow Multiple</span>
+                    </label>
+
+                    <label className="flex items-center cursor-pointer group/search">
+                      <input
+                        type="checkbox"
+                        checked={field.searchable}
+                        onChange={e => updateField(i, { searchable: e.target.checked })}
+                        className="hidden"
+                      />
+                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all ${field.searchable ? 'bg-indigo-500 text-white shadow-sm' : 'bg-slate-50 text-slate-200 border border-slate-100'}`}>
+                        <Search className={`w-3.5 h-3.5 transition-transform ${field.searchable ? 'scale-100' : 'scale-0'}`} />
+                      </div>
+                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter ml-2">Searchable</span>
                     </label>
                   </div>
 
