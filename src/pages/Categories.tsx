@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchApi, uploadMedia, MEDIA_FOLDERS } from "@/lib/api";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
+import { GradientColorPicker } from "@/components/ui/GradientColorPicker";
 import { Plus, ChevronRight, Edit2, Trash2, FolderOpen, X, Check, Upload, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 
@@ -234,13 +235,11 @@ const Categories = () => {
                     <input type="file" onChange={(e) => handleFileChange(e, 'newCat')} className="absolute inset-0 opacity-0 cursor-pointer" />
                   </div>
 
-                  {/* Modern Color Picker */}
-                  <div className="relative w-12 h-12 rounded-xl border border-muted-foreground/20 overflow-hidden cursor-pointer hover:border-primary/50 transition-colors">
-                    <input
-                      type="color"
+                  {/* Modern Gradient/Color Picker */}
+                  <div className="relative w-12 h-12">
+                    <GradientColorPicker
                       value={newCatColor}
-                      onChange={e => setNewCatColor(e.target.value)}
-                      className="absolute inset-0 w-[150%] h-[150%] -top-[25%] -left-[25%] cursor-pointer border-0 p-0"
+                      onChange={setNewCatColor}
                     />
                   </div>
                 </div>
@@ -268,7 +267,7 @@ const Categories = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05 }}
               className="glass-card rounded-[1.3rem] overflow-hidden border border-border/50"
-              style={{ backgroundColor: cat?.theme_color ? cat?.theme_color + 10 : undefined }}
+              style={cat?.theme_color && !cat.theme_color.includes("gradient") ? { backgroundColor: cat.theme_color + "10" } : undefined}
             >
               {/* Category Header */}
               <div
@@ -287,12 +286,10 @@ const Categories = () => {
                         )}
                         <input type="file" onChange={(e) => handleFileChange(e, 'editCat')} className="absolute inset-0 opacity-0 cursor-pointer" />
                       </div>
-                      <div className="relative w-11 h-11 rounded-xl border border-muted-foreground/20 overflow-hidden cursor-pointer hover:border-primary/50 transition-colors">
-                        <input
-                          type="color"
+                      <div className="relative w-11 h-11">
+                        <GradientColorPicker
                           value={editCatData.themeColor}
-                          onChange={e => setEditCatData({ ...editCatData, themeColor: e.target.value })}
-                          className="absolute inset-0 w-[150%] h-[150%] -top-[25%] -left-[25%] cursor-pointer border-0 p-0"
+                          onChange={val => setEditCatData({ ...editCatData, themeColor: val })}
                         />
                       </div>
                     </div>
@@ -308,7 +305,10 @@ const Categories = () => {
                 ) : (
                   <>
                     <div className="relative">
-                      <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-xl shadow-inner overflow-hidden" style={{ backgroundColor: cat.color + "15" }}>
+                      <div
+                        className="w-12 h-12 rounded-2xl flex items-center justify-center text-xl shadow-inner overflow-hidden"
+                        style={cat.color.includes("gradient") ? { background: cat.color } : { backgroundColor: cat.color + "15" }}
+                      >
                         {cat.image_url ? (
                           <img src={cat.image_url} alt={cat.name} className="w-full h-full object-cover" />
                         ) : (
@@ -322,7 +322,18 @@ const Categories = () => {
                       )}
                     </div>
                     <div className="flex-1">
-                      <p className="font-black text-lg" style={{ color: cat?.theme_color ? cat?.theme_color : '#080821' }}>{cat.name}</p>
+                      <p
+                        className="font-black text-lg"
+                        style={
+                          cat?.theme_color
+                            ? cat.theme_color.includes("gradient")
+                              ? { background: cat.theme_color, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", width: "fit-content" }
+                              : { color: cat.theme_color }
+                            : { color: '#080821' }
+                        }
+                      >
+                        {cat.name}
+                      </p>
                       <p className="text-xs text-muted-foreground font-bold tracking-widest">/{cat.slug}</p>
                     </div>
                     <div className="px-3 py-1.5 rounded-full bg-muted/50 border border-border flex items-center gap-2">
@@ -368,12 +379,10 @@ const Categories = () => {
                                   )}
                                   <input type="file" onChange={(e) => handleFileChange(e, 'editSub')} className="absolute inset-0 opacity-0 cursor-pointer" />
                                 </div>
-                                <div className="relative w-10 h-10 rounded-xl border border-muted-foreground/20 overflow-hidden cursor-pointer hover:border-primary/50 transition-colors">
-                                  <input
-                                    type="color"
+                                <div className="relative w-10 h-10">
+                                  <GradientColorPicker
                                     value={editSubData.themeColor}
-                                    onChange={e => setEditSubData({ ...editSubData, themeColor: e.target.value })}
-                                    className="absolute inset-0 w-[150%] h-[150%] -top-[25%] -left-[25%] cursor-pointer border-0 p-0"
+                                    onChange={val => setEditSubData({ ...editSubData, themeColor: val })}
                                   />
                                 </div>
                               </div>
@@ -388,7 +397,10 @@ const Categories = () => {
                             </div>
                           ) : (
                             <>
-                              <div className="w-10 h-10 rounded-xl bg-muted/50 flex items-center justify-center relative overflow-hidden ring-1 ring-border/50">
+                              <div
+                                className="w-10 h-10 rounded-xl flex items-center justify-center relative overflow-hidden ring-1 ring-border/50"
+                                style={sub.color.includes("gradient") ? { background: sub.color } : { backgroundColor: sub.color + "15" }}
+                              >
                                 {sub.image_url ? (
                                   <img src={sub.image_url} alt={sub.name} className="w-full h-full object-cover" />
                                 ) : (
@@ -396,7 +408,18 @@ const Categories = () => {
                                 )}
                               </div>
                               <div className="flex-1">
-                                <p className="text-sm font-black text-foreground">{sub.name}</p>
+                                <p
+                                  className="text-sm font-black text-foreground"
+                                  style={
+                                    sub?.theme_color
+                                      ? sub.theme_color.includes("gradient")
+                                        ? { background: sub.theme_color, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", width: "fit-content" }
+                                        : { color: sub.theme_color }
+                                      : undefined
+                                  }
+                                >
+                                  {sub.name}
+                                </p>
                                 <p className="text-[10px] text-muted-foreground font-bold tracking-widest mt-0.5">/{sub.slug}</p>
                               </div>
                               <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -426,12 +449,10 @@ const Categories = () => {
                                 )}
                                 <input type="file" onChange={(e) => handleFileChange(e, 'newSub')} className="absolute inset-0 opacity-0 cursor-pointer" />
                               </div>
-                              <div className="relative w-10 h-10 rounded-xl border border-muted-foreground/20 overflow-hidden cursor-pointer hover:border-primary/50 transition-colors bg-white">
-                                <input
-                                  type="color"
+                              <div className="relative w-10 h-10">
+                                <GradientColorPicker
                                   value={newSubColor}
-                                  onChange={e => setNewSubColor(e.target.value)}
-                                  className="absolute inset-0 w-[150%] h-[150%] -top-[25%] -left-[25%] cursor-pointer border-0 p-0"
+                                  onChange={setNewSubColor}
                                 />
                               </div>
                             </div>
