@@ -280,7 +280,7 @@ const Categories = () => {
                       <input value={editCatData.icon} onChange={e => setEditCatData({ ...editCatData, icon: e.target.value })} className="w-11 h-11 text-center text-xl rounded-xl bg-muted border-0 focus:ring-2 focus:ring-primary/30" />
                       <div className="relative group w-11 h-11 flex items-center justify-center rounded-xl bg-muted border border-dashed border-muted-foreground/30 hover:border-primary/50 cursor-pointer overflow-hidden">
                         {editCatData.imageUrl ? (
-                          <img src={editCatData.imageUrl} alt="Edit" className="w-full h-full object-cover" />
+                          <img src={editCatData.imageUrl} alt="Edit" className="w-5 h-5 object-cover" />
                         ) : (
                           <Upload className="w-4 h-4 text-muted-foreground" />
                         )}
@@ -310,7 +310,7 @@ const Categories = () => {
                         style={cat.color.includes("gradient") ? { background: cat.color } : { backgroundColor: cat.color + "15" }}
                       >
                         {cat.image_url ? (
-                          <img src={cat.image_url} alt={cat.name} className="w-full h-full object-cover" />
+                          <img src={cat.image_url} alt={cat.name} className="w-5 h-5 object-cover" />
                         ) : (
                           <span className="relative z-10">{cat.icon}</span>
                         )}
@@ -373,7 +373,7 @@ const Categories = () => {
                                 <input value={editSubData.icon} onChange={e => setEditSubData({ ...editSubData, icon: e.target.value })} className="w-10 h-10 text-center text-lg rounded-xl bg-muted border-0" />
                                 <div className="relative group w-10 h-10 flex items-center justify-center rounded-xl bg-muted border border-dashed border-muted-foreground/30 overflow-hidden">
                                   {editSubData.imageUrl ? (
-                                    <img src={editSubData.imageUrl} alt="Sub" className="w-full h-full object-cover" />
+                                    <img src={editSubData.imageUrl} alt="Sub" className="w-5 h-5 object-cover" />
                                   ) : (
                                     <Upload className="w-3 h-3 text-muted-foreground" />
                                   )}
@@ -402,7 +402,7 @@ const Categories = () => {
                                 style={sub.color.includes("gradient") ? { background: sub.color } : { backgroundColor: sub.color + "15" }}
                               >
                                 {sub.image_url ? (
-                                  <img src={sub.image_url} alt={sub.name} className="w-full h-full object-cover" />
+                                  <img src={sub.image_url} alt={sub.name} className="w-5 h-5 object-cover" />
                                 ) : (
                                   <span className="text-lg">{sub.icon}</span>
                                 )}
@@ -443,7 +443,7 @@ const Categories = () => {
                               <input value={newSubIcon} onChange={e => setNewSubIcon(e.target.value)} placeholder="Icon" className="w-10 h-10 text-center rounded-xl bg-white text-lg outline-none border border-border" />
                               <div className="relative group w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-dashed border-border hover:border-primary/50 transition-colors cursor-pointer overflow-hidden">
                                 {newSubImageUrl ? (
-                                  <img src={newSubImageUrl} alt="Sub" className="w-full h-full object-cover" />
+                                  <img src={newSubImageUrl} alt="Sub" className="w-5 h-5 object-cover" />
                                 ) : (
                                   <Upload className="w-3.5 h-3.5 text-muted-foreground" />
                                 )}
