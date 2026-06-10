@@ -13,6 +13,7 @@ import {
   Coins,
   Image,
   IndianRupee,
+  Flame,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -21,7 +22,9 @@ const navItems = [
   { icon: BarChart, label: "Analytics", path: "/analytics" },
   { icon: Layers, label: "Categories", path: "/categories" },
   { icon: LayoutGrid, label: "Templates", path: "/templates" },
+  { icon: Flame, label: "Trending", path: "/trending-templates" },
   { icon: Sparkles, label: "Wishes", path: "/wishes" },
+
   { icon: ShoppingBag, label: "Orders", path: "/orders" },
   { icon: CreditCard, label: "Stripe",   path: "/stripe" },
   { icon: IndianRupee, label: "Razorpay", path: "/razorpay" },

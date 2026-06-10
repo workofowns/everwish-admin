@@ -6,7 +6,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Index from "./pages/Index";
 import Categories from "./pages/Categories";
 import Templates from "./pages/Templates";
+import TrendingTemplates from "./pages/TrendingTemplates";
 import UsersPage from "./pages/UsersPage";
+
 import SettingsPage from "./pages/SettingsPage";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
@@ -52,7 +54,9 @@ const App = () => (
           <Route path="/analytics" element={<RequireAuth><Analytics /></RequireAuth>} />
           <Route path="/categories" element={<RequireAuth><Categories /></RequireAuth>} />
           <Route path="/templates" element={<RequireAuth><Templates /></RequireAuth>} />
+          <Route path="/trending-templates" element={<RequireAuth><TrendingTemplates /></RequireAuth>} />
           <Route path="/wishes" element={<RequireAuth><Wishes /></RequireAuth>} />
+
           <Route path="/orders" element={<RequireAuth><Orders /></RequireAuth>} />
           <Route path="/stripe" element={<RequireAuth><StripeDashboard /></RequireAuth>} />
           <Route path="/stripe/subscriptions" element={<RequireAuth><StripeSubscriptions /></RequireAuth>} />
