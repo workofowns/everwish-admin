@@ -1,15 +1,17 @@
-import { 
-  Home, 
-  Layers, 
-  LayoutGrid, 
-  Users, 
-  Settings, 
-  Sparkles, 
-  LogOut, 
+import {
+  Home,
+  Layers,
+  LayoutGrid,
+  Users,
+  Settings,
+  Sparkles,
+  LogOut,
   CreditCard,
   BarChart,
   ShoppingBag,
   MessageSquare,
+  MessageSquarePlus,
+  Mail,
   Coins,
   Image,
   IndianRupee,
@@ -26,13 +28,15 @@ const navItems = [
   { icon: Sparkles, label: "Wishes", path: "/wishes" },
 
   { icon: ShoppingBag, label: "Orders", path: "/orders" },
-  { icon: CreditCard, label: "Stripe",   path: "/stripe" },
+  { icon: CreditCard, label: "Stripe", path: "/stripe" },
   { icon: IndianRupee, label: "Razorpay", path: "/razorpay" },
-  { icon: Users,      label: "Users",    path: "/users" },
-  { icon: Image,      label: "S3",       path: "/media" },
-  { icon: Coins,      label: "Credits",  path: "/credits" },
+  { icon: Users, label: "Users", path: "/users" },
+  { icon: Image, label: "S3", path: "/media" },
+  { icon: Coins, label: "Credits", path: "/credits" },
   { icon: MessageSquare, label: "Contact", path: "/contact" },
-  { icon: Settings,   label: "Settings", path: "/settings" },
+  { icon: MessageSquarePlus, label: "Feedback", path: "/feedback" },
+  { icon: Mail, label: "Waitlist", path: "/ai-waitlist" },
+  { icon: Settings, label: "Settings", path: "/settings" },
 ];
 
 const DashboardSidebar = () => {
@@ -52,10 +56,10 @@ const DashboardSidebar = () => {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 flex flex-col items-center gap-1 w-full px-2">
+      <nav className="flex-1 flex flex-col items-center gap-1 w-full px-2 pb-5 overflow-y-auto overflow-x-hidden no-scrollbar">
         {navItems.map((item) => {
-          const isActive = item.path === "/" 
-            ? location.pathname === "/" 
+          const isActive = item.path === "/"
+            ? location.pathname === "/"
             : location.pathname.startsWith(item.path);
           return (
             <button

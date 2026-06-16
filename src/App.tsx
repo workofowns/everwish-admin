@@ -18,6 +18,8 @@ import StripePrices from "./pages/stripe/GlobalPrices";
 import Orders from "./pages/Orders";
 import Wishes from "./pages/Wishes";
 import ContactMessages from "./pages/ContactMessages";
+import FeedbackList from "./pages/FeedbackList";
+import AIWaitlist from "./pages/AIWaitlist";
 import Analytics from "./pages/Analytics";
 import CreditsPage from "./pages/Credits";
 import Media from "./pages/Media";
@@ -72,6 +74,8 @@ const App = () => (
           <Route path="/razorpay/plans" element={<RequireAuth><RazorpayPlans /></RequireAuth>} />
           <Route path="/razorpay/subscriptions" element={<RequireAuth><RazorpaySubscriptions /></RequireAuth>} />
           <Route path="/contact" element={<RequireAuth><ContactMessages /></RequireAuth>} />
+          <Route path="/feedback" element={<RequireAuth><FeedbackList /></RequireAuth>} />
+          <Route path="/ai-waitlist" element={<RequireAuth><AIWaitlist /></RequireAuth>} />
           <Route path="/users" element={<RequireAuth><UsersPage /></RequireAuth>} />
           <Route path="/credits" element={<RequireAuth><CreditsPage /></RequireAuth>} />
           <Route path="/media" element={<RequireAuth><Media /></RequireAuth>} />

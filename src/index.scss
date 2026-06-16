@@ -162,4 +162,32 @@
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
+
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(100, 100, 100, 0.2) transparent;
+
+    &::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: rgba(100, 100, 100, 0.2);
+      border-radius: 999px;
+    }
+    &::-webkit-scrollbar-thumb:hover {
+      background: rgba(100, 100, 100, 0.4);
+    }
+  }
+
+  .no-scrollbar {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+    &::-webkit-scrollbar {
+      display: none; /* Chrome, Safari and Opera */
+    }
+  }
 }
