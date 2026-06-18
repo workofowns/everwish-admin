@@ -66,6 +66,7 @@ interface Template {
   is_active: boolean;
   tags: string[];
   preview_images: string[];
+  preview_video_url?: string | null;
 }
 
 interface TemplatesResponse {
@@ -111,6 +112,7 @@ const Templates = () => {
   const [newTags, setNewTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   const [newIsActive, setNewIsActive] = useState(true);
+  const [newPreviewVideoUrl, setNewPreviewVideoUrl] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   // Holds the selected File locally — S3 upload deferred until Deploy
   const [pendingThumbnailFile, setPendingThumbnailFile] = useState<File | null>(null);
@@ -247,6 +249,7 @@ const Templates = () => {
     setNewTags([]);
     setTagInput("");
     setNewIsActive(true);
+    setNewPreviewVideoUrl("");
     setNewFields([
       {
         id: `step_${Date.now()}`,
@@ -462,7 +465,8 @@ const Templates = () => {
       priceId: newPriceId || null,
       isActive: newIsActive,
       tags: newTags,
-      previewImages
+      previewImages,
+      previewVideoUrl: newPreviewVideoUrl.trim() || null,
     };
 
     if (editingId) {
@@ -501,6 +505,7 @@ const Templates = () => {
     setSelectedCategoryId(template.category_id || "");
     setSelectedSubCategoryId(template.sub_category_id || "");
     setNewPreviewImages(template.preview_images || []);
+    setNewPreviewVideoUrl(template.preview_video_url || "");
     setShowAddForm(true);
   };
 
@@ -809,6 +814,20 @@ const Templates = () => {
                           />
                         </label>
                       </div>
+                    </div>
+
+                    {/* Preview Video URL */}
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                        <Globe className="w-3 h-3" /> Preview Video URL
+                        <span className="text-[9px] font-normal lowercase text-slate-300 ml-1">(YouTube link)</span>
+                      </label>
+                      <input
+                        value={newPreviewVideoUrl}
+                        onChange={e => setNewPreviewVideoUrl(e.target.value)}
+                        placeholder="https://www.youtube.com/watch?v=..."
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-600 outline-none focus:ring-2 focus:ring-primary/15 focus:border-primary/30 transition-all placeholder:text-slate-300"
+                      />
                     </div>
 
                     {/* Form Builder */}
