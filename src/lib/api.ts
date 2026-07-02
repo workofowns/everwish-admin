@@ -47,8 +47,10 @@ export const fetchApi = async (endpoint: string, options: RequestInit = {}) => {
 
 // ── Media Upload utility (S3 + CloudFront) ───────────────────────────────────
 /**
- * Uploads a file to S3 via the backend /media/upload endpoint.
- * Returns the CloudFront CDN URL.
+ * Uploads a file to S3 via the presign flow:
+ *   Step 1 → POST /media/presign  (get a short-lived S3 PUT URL from the server)
+ *   Step 2 → PUT {uploadUrl}      (send file bytes directly from browser to S3)
+ * Returns the CloudFront CDN URL. Signature is identical to the old uploadMedia.
  *
  * @param file    The File object from an <input type="file">
  * @param folder  The S3 destination folder. Use MEDIA_FOLDERS constants.
@@ -57,24 +59,35 @@ export const fetchApi = async (endpoint: string, options: RequestInit = {}) => {
 export const uploadMedia = async (file: File, folder: MediaFolder): Promise<string> => {
   const token = localStorage.getItem("adminToken");
 
-  const formData = new FormData();
-  formData.append("file", file);
-  formData.append("folder", folder);
-
-  const res = await fetch(`${MEDIA_BASE_URL}/media/upload`, {
+  // ── Step 1: Ask backend for a presigned S3 PUT URL ──────────────────────────
+  const presignRes = await fetch(`${MEDIA_BASE_URL}/media/presign`, {
     method: "POST",
     headers: {
+      "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
-      // Do NOT set Content-Type — browser sets it with boundary for multipart
     },
-    body: formData,
+    body: JSON.stringify({
+      folder,
+      filename: file.name,
+      contentType: file.type,
+    }),
   });
 
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.error?.message || errorData.message || "Upload failed");
+  if (!presignRes.ok) {
+    const err = await presignRes.json().catch(() => ({}));
+    throw new Error(err.error?.message || err.message || "Failed to get upload URL");
   }
 
-  const data = await res.json();
-  return data.url; // CloudFront CDN URL
+  const { uploadUrl, publicUrl } = await presignRes.json();
+
+  // ── Step 2: PUT file bytes directly to S3 (no server in the middle) ─────────
+  const s3Res = await fetch(uploadUrl, {
+    method: "PUT",
+    headers: { "Content-Type": file.type },
+    body: file,
+  });
+
+  if (!s3Res.ok) throw new Error(`S3 upload failed: ${s3Res.status} ${s3Res.statusText}`);
+
+  return publicUrl; // CloudFront CDN URL
 };
