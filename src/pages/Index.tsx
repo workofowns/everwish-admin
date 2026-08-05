@@ -3,14 +3,11 @@ import { fetchApi } from "@/lib/api";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import StatCard from "@/components/dashboard/StatCard";
 import RecentActivity from "@/components/dashboard/RecentActivity";
-import { Users, Sparkles, Building2, IndianRupee } from "lucide-react";
+import { Users, Sparkles } from "lucide-react";
 
 interface AdminStats {
   totalUsers: number;
   totalWishes: number;
-  totalOrders: number;
-  totalRevenue: number;
-  monthlyRevenue: number;
 }
 
 const Index = () => {
@@ -39,11 +36,9 @@ const Index = () => {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-8">
           <StatCard title="Total Users" value={isLoading ? "..." : stats?.totalUsers.toString() || "0"} subtitle="Platform signups" icon={Users} glowColor="primary" delay={0} />
           <StatCard title="Total Wishes" value={isLoading ? "..." : stats?.totalWishes.toString() || "0"} subtitle="Created so far" icon={Sparkles} glowColor="accent" delay={0.1} />
-          <StatCard title="Total Orders" value={isLoading ? "..." : stats?.totalOrders.toString() || "0"} subtitle="Paid checkouts" icon={Building2} glowColor="secondary" delay={0.2} />
-          <StatCard title="Revenue" value={isLoading ? "..." : `₹${((stats?.totalRevenue || 0) / 100).toFixed(0)}`} subtitle={isLoading ? "..." : `₹${((stats?.monthlyRevenue || 0) / 100).toFixed(0)} this month`} icon={IndianRupee} glowColor="primary" delay={0.3} />
         </div>
 
         {/* Activity */}

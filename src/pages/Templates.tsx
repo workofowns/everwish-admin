@@ -35,12 +35,6 @@ interface FormField {
   description?: string;
 }
 
-interface StripePrice {
-  id: string;
-  nickname: string;
-  amount: number;
-  currency: string;
-}
 
 interface Template {
   id: string;
@@ -55,8 +49,6 @@ interface Template {
   price_amount: number;
   real_price: number;
   currency: string;
-  stripe_product_id?: string | null;
-  stripe_price_id?: string | null;
   category_id?: string;
   category_name?: string;
   sub_category_id?: string;
@@ -138,10 +130,6 @@ const Templates = () => {
     queryFn: () => fetchApi("/sub-categories"),
   });
 
-  const { data: pricesData } = useQuery<StripePrice[]>({
-    queryKey: ["stripePrices"],
-    queryFn: () => fetchApi("/stripe/prices"),
-  });
 
   const templates = data?.rows || [];
 
@@ -704,26 +692,6 @@ const Templates = () => {
                       </div>
                     </div>
 
-                    {/* Stripe Pricing Link (premium only) */}
-                    {newType === "premium" && (
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Stripe Price Link</label>
-                        <Select value={newPriceId} onValueChange={setNewPriceId}>
-                          <SelectTrigger className="w-full h-10 px-3.5 rounded-xl bg-primary/5 border-primary/20 text-sm font-medium text-slate-700 outline-none">
-                            <SelectValue placeholder="Select a managed price point" />
-                          </SelectTrigger>
-                          <SelectContent className="rounded-xl border-slate-200 shadow-xl">
-                            <SelectItem value="none" className="text-sm text-slate-400 italic">No linked price</SelectItem>
-                            {pricesData?.map(p => (
-                              <SelectItem key={p.id} value={p.id} className="text-sm">
-                                {p.nickname} — {p.currency.toUpperCase()} {p.amount / 100}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <p className="text-[10px] text-primary/60 italic pl-1">Multi-currency rates are auto-generated from the linked price.</p>
-                      </div>
-                    )}
 
                     {/* Visibility Toggle */}
                     <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200">
