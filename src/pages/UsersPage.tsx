@@ -16,7 +16,6 @@ interface User {
   id: string;
   display_name: string;
   email: string;
-  plan: "free" | "pro" | "premium";
   role: string;
   is_verified: boolean;
   created_at: string;
@@ -27,20 +26,11 @@ interface UsersResponse {
   total: number;
 }
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
-const PLAN_BADGE: Record<string, string> = {
-  premium: "bg-amber-50 text-amber-600 border-amber-200",
-  pro:     "bg-violet-50 text-violet-600 border-violet-200",
-  free:    "bg-muted text-muted-foreground border-transparent",
-};
-
 // ── Main Component ────────────────────────────────────────────────────────────
 
 const UsersPage = () => {
   const queryClient = useQueryClient();
   const [search, setSearch]             = useState("");
-  const [filterPlan, setFilterPlan]     = useState<"all" | "free" | "pro" | "premium">("all");
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery<UsersResponse>({
@@ -67,10 +57,7 @@ const UsersPage = () => {
     onError: (e: any) => toast.error(e.message || "Deletion failed"),
   });
 
-  const activeUsers = data?.rows || [];
-  const filtered = activeUsers.filter(
-    (u) => filterPlan === "all" || u.plan === filterPlan
-  );
+  const filtered = data?.rows || [];
 
   return (
     <DashboardLayout>
@@ -80,9 +67,9 @@ const UsersPage = () => {
           <h1 className="section-header text-3xl">Users</h1>
         </div>
 
-        {/* Search & Filters */}
-        <div className="flex items-center gap-3 mb-6 flex-wrap">
-          <div className="flex-1 relative min-w-[200px]">
+        {/* Search */}
+        <div className="flex items-center gap-3 mb-6">
+          <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
               value={search}
@@ -91,26 +78,13 @@ const UsersPage = () => {
               className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-card border border-border text-sm outline-none focus:ring-2 focus:ring-primary/30"
             />
           </div>
-          {(["all", "free", "pro", "premium"] as const).map((plan) => (
-            <button
-              key={plan}
-              onClick={() => setFilterPlan(plan)}
-              className={`px-4 py-2.5 rounded-xl text-sm font-semibold capitalize transition-all ${
-                filterPlan === plan
-                  ? "bg-primary/10 text-primary border border-primary/20"
-                  : "bg-card border border-border text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {plan}
-            </button>
-          ))}
         </div>
 
         {/* Users Table */}
         <div className="glass-card rounded-2xl overflow-hidden shadow-sm border border-border/50">
           {/* Header row */}
-          <div className="grid grid-cols-[1fr_1.2fr_0.55fr_0.55fr_0.7fr_0.4fr] gap-4 px-6 py-4 bg-muted/30 border-b border-border/50">
-            {["Name", "Email", "Plan", "Role", "Joined", ""].map((h) => (
+          <div className="grid grid-cols-[1fr_1.2fr_0.55fr_0.7fr_0.4fr] gap-4 px-6 py-4 bg-muted/30 border-b border-border/50">
+            {["Name", "Email", "Role", "Joined", ""].map((h) => (
               <span
                 key={h}
                 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground"
@@ -143,7 +117,7 @@ const UsersPage = () => {
               >
                 {/* Row */}
                 <div
-                  className={`grid grid-cols-[1fr_1.2fr_0.55fr_0.55fr_0.7fr_0.4fr] gap-4 px-6 py-4 transition-all cursor-pointer items-center group border-b border-border/30 ${
+                  className={`grid grid-cols-[1fr_1.2fr_0.55fr_0.7fr_0.4fr] gap-4 px-6 py-4 transition-all cursor-pointer items-center group border-b border-border/30 ${
                     expandedUser === user.id
                       ? "bg-primary/5"
                       : "hover:bg-muted/30"
@@ -155,13 +129,7 @@ const UsersPage = () => {
                   {/* Name */}
                   <div className="flex items-center gap-3">
                     <div
-                      className={`w-9 h-9 rounded-xl flex-shrink-0 ${
-                        user.plan === "premium"
-                          ? "gradient-accent"
-                          : user.plan === "pro"
-                          ? "bg-violet-500"
-                          : "btn-primary shadow-none"
-                      } flex items-center justify-center text-white text-[10px] font-black group-hover:scale-110 transition-transform`}
+                      className="w-9 h-9 rounded-xl flex-shrink-0 btn-primary shadow-none flex items-center justify-center text-white text-[10px] font-black group-hover:scale-110 transition-transform"
                     >
                       {(user.display_name || user.email)
                         .split(" ")
@@ -185,15 +153,6 @@ const UsersPage = () => {
                   {/* Email */}
                   <span className="text-sm font-medium text-muted-foreground truncate">
                     {user.email}
-                  </span>
-
-                  {/* Plan */}
-                  <span
-                    className={`text-[10px] font-black uppercase tracking-tighter w-fit px-2 py-0.5 rounded-lg border ${
-                      PLAN_BADGE[user.plan] ?? PLAN_BADGE.free
-                    }`}
-                  >
-                    {user.plan}
                   </span>
 
                   {/* Role */}
@@ -250,41 +209,21 @@ const UsersPage = () => {
                             </div>
                             <div>
                               <strong className="text-foreground uppercase tracking-widest text-[9px] mb-0.5 block opacity-50">
-                                Plan
-                              </strong>
-                              {user.plan.toUpperCase()}
-                            </div>
-                            <div>
-                              <strong className="text-foreground uppercase tracking-widest text-[9px] mb-0.5 block opacity-50">
                                 Role
                               </strong>
                               {user.role.toUpperCase()}
+                            </div>
+                            <div>
+                              <strong className="text-foreground uppercase tracking-widest text-[9px] mb-0.5 block opacity-50">
+                                Joined
+                              </strong>
+                              {format(new Date(user.created_at), "MMM d, yyyy")}
                             </div>
                           </div>
                         </div>
 
                         {/* ── Right: Action Buttons ── */}
                         <div className="flex flex-col gap-2 min-w-[200px]">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              updateMutation.mutate({
-                                id: user.id,
-                                payload: {
-                                  plan: user.plan === "premium" ? "free" : "premium",
-                                },
-                              });
-                            }}
-                            className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-muted hover:bg-primary/5 transition-colors group"
-                          >
-                            <span className="text-[10px] font-bold">Toggle Plan</span>
-                            {user.plan === "premium" ? (
-                              <ShieldAlert className="w-4 h-4 text-amber-500" />
-                            ) : (
-                              <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                            )}
-                          </button>
-
                           <button
                             onClick={(e) => {
                               e.stopPropagation();

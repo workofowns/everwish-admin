@@ -70,11 +70,6 @@ const Analytics = () => {
       };
    }, []);
 
-   const { data: revenueRes } = useQuery({
-      queryKey: ["adminAnalyticsRevenue"],
-      queryFn: () => fetchApi("/analytics/revenue"),
-   });
-
    const { data: usersRes } = useQuery({
       queryKey: ["adminAnalyticsUsers"],
       queryFn: () => fetchApi("/analytics/users"),
@@ -95,21 +90,14 @@ const Analytics = () => {
       queryFn: () => fetchApi("/analytics/detailed-acquisition"),
    });
 
-   const revenueData = revenueRes?.data?.map((d: any) => ({
-      date: format(new Date(d.date), "MMM d"),
-      revenue: d.revenue / 100
-   })) || [];
-
    const usersData = usersRes?.data?.map((d: any) => ({
       date: format(new Date(d.date), "MMM d"),
       signups: parseInt(d.signups)
    })) || [];
 
-   const totalRev = revenueData.reduce((acc: number, curr: any) => acc + curr.revenue, 0);
-   const totalUsers = usersData.reduce((acc: number, curr: any) => acc + curr.signups, 0);
-   const premiumUsers = acquisitionRes?.data?.premium_users || 0;
-   const freeUsers = acquisitionRes?.data?.free_users || 0;
-   const growth = acquisitionRes?.data || { revenue_growth: 0, user_growth: 0, premium_growth: 0 };
+   const totalUsersCount = acquisitionRes?.data?.total_users || 0;
+   const totalRecentSignups = usersData.reduce((acc: number, curr: any) => acc + curr.signups, 0);
+   const growth = acquisitionRes?.data || { user_growth: 0 };
 
    const topTemplates = topTemplatesRes?.data || [];
    const funnelSteps = funnelRes?.data || [];
@@ -132,25 +120,25 @@ const Analytics = () => {
             {/* Core Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                <OverviewCard
-                  title="Revenue"
-                  value={`₹${totalRev.toLocaleString()}`}
-                  change={`${growth.revenue_growth >= 0 ? '+' : ''}${growth.revenue_growth}%`}
-                  icon={IndianRupee}
-                  trend={growth.revenue_growth >= 0 ? "up" : "down"}
-               />
-               <OverviewCard
-                  title="Total Growth"
-                  value={totalUsers.toLocaleString()}
+                  title="Total Users"
+                  value={totalUsersCount.toLocaleString()}
                   change={`${growth.user_growth >= 0 ? '+' : ''}${growth.user_growth}%`}
                   icon={Users}
                   trend={growth.user_growth >= 0 ? "up" : "down"}
                />
                <OverviewCard
-                  title="Premium Hub"
-                  value={premiumUsers}
-                  change={`${growth.premium_growth >= 0 ? '+' : ''}${growth.premium_growth}%`}
+                  title="30D Signups"
+                  value={totalRecentSignups.toLocaleString()}
+                  change={`${growth.user_growth >= 0 ? '+' : ''}${growth.user_growth}%`}
+                  icon={TrendingUp}
+                  trend={growth.user_growth >= 0 ? "up" : "down"}
+               />
+               <OverviewCard
+                  title="Top Template"
+                  value={topTemplates[0]?.name || "N/A"}
+                  change={`${topTemplates[0]?.users || 0} uses`}
                   icon={Layout}
-                  trend={growth.premium_growth >= 0 ? "up" : "down"}
+                  trend="up"
                />
                <OverviewCard title="Live Pings" value={liveLog.length > 0 ? "Active" : "Idle"} change="Live" icon={Activity} trend="up" />
             </div>
@@ -158,12 +146,12 @@ const Analytics = () => {
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
                {/* Primary Charts Section */}
                <div className="xl:col-span-2 space-y-8">
-                  {/* Main Revenue Chart */}
+                  {/* User Signups Trajectory Chart */}
                   <div className="glass-card rounded-[2.5rem] p-8 border border-border relative overflow-hidden group">
                      <div className="flex items-center justify-between mb-8">
                         <div>
-                           <h3 className="text-xl font-bold tracking-tight">Financial Trajectory</h3>
-                           <p className="text-xs text-muted-foreground font-semibold mt-1">Real-time platform earnings data</p>
+                           <h3 className="text-xl font-bold tracking-tight">User Acquisition Trajectory</h3>
+                           <p className="text-xs text-muted-foreground font-semibold mt-1">Daily platform signups over the last 30 days</p>
                         </div>
                         <div className="flex items-center gap-3">
                            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary/5 text-primary text-[10px] font-black uppercase tracking-widest">
@@ -174,7 +162,7 @@ const Analytics = () => {
 
                      <div className="h-[350px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
-                           <AreaChart data={revenueData}>
+                           <AreaChart data={usersData}>
                               <defs>
                                  <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
                                     <stop offset="5%" stopColor="#6c41cf" stopOpacity={0.3} />
@@ -192,14 +180,13 @@ const Analytics = () => {
                                  axisLine={false}
                                  tickLine={false}
                                  tick={{ fontSize: 10, fontWeight: 700, fill: "hsl(var(--muted-foreground))" }}
-                                 tickFormatter={(v) => `₹${v}`}
                               />
                               <Tooltip
                                  content={<CustomTooltip />}
                               />
                               <Area
                                  type="monotone"
-                                 dataKey="revenue"
+                                 dataKey="signups"
                                  stroke="#6c41cf"
                                  strokeWidth={4}
                                  fillOpacity={1}
@@ -230,28 +217,17 @@ const Analytics = () => {
                         <div className="flex items-center justify-between mb-6">
                            <div>
                               <h3 className="font-bold text-sm flex items-center gap-2">
-                                 <Zap className="w-4 h-4 text-accent" /> Signup Growth
+                                 <Zap className="w-4 h-4 text-accent" /> Daily Signups
                               </h3>
                               <p className="text-[10px] text-muted-foreground font-medium mt-0.5">User acquisition distribution</p>
                            </div>
                            <div className="text-right">
-                              <p className="text-xl font-black text-foreground">{(premiumUsers + freeUsers).toLocaleString()}</p>
-                              <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Total Active</p>
+                              <p className="text-xl font-black text-foreground">{totalUsersCount.toLocaleString()}</p>
+                              <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Total Registered</p>
                            </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4 mb-6">
-                           <div className="p-3 rounded-2xl bg-primary/5 border border-primary/10">
-                              <p className="text-[10px] font-bold text-primary uppercase tracking-tighter mb-1">Premium</p>
-                              <p className="text-lg font-black text-foreground leading-none">{premiumUsers}</p>
-                           </div>
-                           <div className="p-3 rounded-2xl bg-muted/50 border border-border/50">
-                              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-tighter mb-1">Free Tier</p>
-                              <p className="text-lg font-black text-foreground leading-none">{freeUsers}</p>
-                           </div>
-                        </div>
-
-                        <div className="h-[140px] mt-auto">
+                        <div className="h-[200px] mt-auto">
                            <ResponsiveContainer width="100%" height="100%">
                               <BarChart data={usersData}>
                                  <Bar dataKey="signups" fill="#6c41cf" radius={[4, 4, 0, 0]}>
