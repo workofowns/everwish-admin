@@ -5,9 +5,8 @@ import { fetchApi, uploadMedia, MEDIA_FOLDERS } from "@/lib/api";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import FormBuilder, { FormStep } from "@/components/dashboard/FormBuilder";
 import {
-  Plus, Search, Crown, Edit2, Trash2, X, Check, Zap,
-  Settings2, RefreshCw, IndianRupee, Upload, Layers,
-  Globe, Layout, Tag, Box, AlertCircle
+  Plus, Search, Crown, Edit2, Trash2, X, Check, Zap, RefreshCw, Upload, Layers,
+  Globe, Layout, Tag, Box
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -82,7 +81,6 @@ const Templates = () => {
 
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState<"all" | "free" | "premium">("all");
-  const [editingFields, setEditingFields] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -109,7 +107,7 @@ const Templates = () => {
   // Holds the selected File locally — S3 upload deferred until Deploy
   const [pendingThumbnailFile, setPendingThumbnailFile] = useState<File | null>(null);
   const [localPreviewUrl, setLocalPreviewUrl] = useState<string>("");
-  
+
   // Gallery/Preview Images
   const [newPreviewImages, setNewPreviewImages] = useState<string[]>([]);
   const [pendingPreviewFiles, setPendingPreviewFiles] = useState<File[]>([]);
@@ -252,12 +250,12 @@ const Templates = () => {
     setPendingThumbnailFile(null);
     if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl);
     setLocalPreviewUrl("");
-    
+
     setNewPreviewImages([]);
     previewLocalUrls.forEach(url => URL.revokeObjectURL(url));
     setPreviewLocalUrls([]);
     setPendingPreviewFiles([]);
-    
+
     setShowAddForm(false);
     setEditingId(null);
   };
@@ -320,7 +318,7 @@ const Templates = () => {
     for (let i = 0; i < newFields.length; i++) {
       const step = newFields[i];
       const stepTitle = step.title.trim();
-      
+
       if (!stepTitle) {
         toast.error(`Step ${i + 1} is missing a title`);
         return;
@@ -343,7 +341,7 @@ const Templates = () => {
           toast.error(`Slot "${fieldLabel}" in step "${stepTitle}" is missing a unique key (name)`);
           return;
         }
-        
+
         // Ensure name (key) is safe for JSON/DB keys
         if (!/^[a-z0-9_]+$/i.test(fieldName)) {
           toast.error(`Slot key "${fieldName}" in "${stepTitle}" must only contain letters, numbers, and underscores`);
@@ -402,14 +400,14 @@ const Templates = () => {
           setIsUploading(true);
           try {
             // Get current URLs (which include blob: URLs from new selections)
-            const urls = field.multiple 
+            const urls = field.multiple
               ? (defaultValue?.startsWith('[') ? JSON.parse(defaultValue) : [defaultValue])
               : [defaultValue];
-            
+
             // Upload all pending files
             const destinationFolder = field.s3Folder || MEDIA_FOLDERS.TEMPLATES;
             const uploadedPermUrls = await Promise.all(field._files.map(f => uploadMedia(f, destinationFolder)));
-            
+
             // Replace blob: URLs with permanent URLs in order
             let uploadedIdx = 0;
             const replacedUrls = urls.map((url: string) => {
@@ -768,17 +766,17 @@ const Templates = () => {
                             </div>
                           );
                         })}
-                        
+
                         {/* Add Button */}
                         <label className="aspect-square cursor-pointer rounded-xl border-2 border-dashed border-slate-200 hover:border-primary/40 hover:bg-primary/5 transition-all flex flex-col items-center justify-center text-slate-300 hover:text-primary group">
                           <Plus className="w-6 h-6 mb-1 transition-transform group-hover:scale-110" />
                           <span className="text-[9px] font-bold uppercase">Add Photo</span>
-                          <input 
-                            type="file" 
-                            multiple 
-                            accept="image/*" 
-                            className="hidden" 
-                            onChange={handlePreviewImagesSelect} 
+                          <input
+                            type="file"
+                            multiple
+                            accept="image/*"
+                            className="hidden"
+                            onChange={handlePreviewImagesSelect}
                           />
                         </label>
                       </div>
