@@ -44,16 +44,10 @@ interface Template {
   component_key: string;
   thumbnail_url: string;
   form_fields: FormField[] | FormStep[];
-  price: number;
-  price_amount: number;
-  real_price: number;
-  currency: string;
   category_id?: string;
   category_name?: string;
   sub_category_id?: string;
   sub_category_name?: string;
-  price_id?: string | null;
-  price_nickname?: string;
   is_active: boolean;
   tags: string[];
   preview_images: string[];
@@ -98,7 +92,6 @@ const Templates = () => {
       fields: [{ name: "name", label: "Name", type: "text", placeholder: "Enter name", required: true }]
     }
   ]);
-  const [newPriceId, setNewPriceId] = useState<string>("");
   const [newTags, setNewTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   const [newIsActive, setNewIsActive] = useState(true);
@@ -231,7 +224,6 @@ const Templates = () => {
     setNewDescription("");
     setNewType("free");
     setNewComponentName("");
-    setNewPriceId("");
     setNewTags([]);
     setTagInput("");
     setNewIsActive(true);
@@ -448,7 +440,6 @@ const Templates = () => {
       componentKey: trimmedComponentKey,
       formFields: processedFields,
       subCategoryId: selectedSubCategoryId,
-      priceId: newPriceId || null,
       isActive: newIsActive,
       tags: newTags,
       previewImages,
@@ -485,7 +476,6 @@ const Templates = () => {
     }
     setNewFields(fieldsToEdit);
     setNewThumbnailUrl(template.thumbnail_url || "");
-    setNewPriceId(template.price_id || "");
     setNewTags(template.tags || []);
     setNewIsActive(template.is_active);
     setSelectedCategoryId(template.category_id || "");
@@ -924,18 +914,7 @@ const Templates = () => {
                   </div>
 
                   <div className="flex items-center gap-1 shrink-0">
-                    {template.type === "premium" ? (
-                      <div className="flex flex-col items-end">
-                        <span className="text-[10px] font-black text-amber-600 leading-none">
-                          {template.currency?.toUpperCase()} {template.real_price}
-                        </span>
-                        <span className="text-[7px] text-slate-300 font-bold uppercase tracking-tighter">
-                          {template.price_nickname || "Managed"}
-                        </span>
-                      </div>
-                    ) : (
-                      <span className="text-[9px] font-black text-emerald-500 uppercase">Free</span>
-                    )}
+                    <span className="text-[9px] font-black text-emerald-500 uppercase">Free</span>
                   </div>
                 </div>
               </div>
