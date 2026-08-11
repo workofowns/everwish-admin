@@ -19,8 +19,6 @@ const RecentActivity = () => {
         return { action: "joined EverWish", icon: UserPlus, color: "btn-primary" };
       case 'wish_created':
         return { action: "created a wish", icon: Sparkles, color: "gradient-accent" };
-      case 'order_paid':
-        return { action: "purchased a template", icon: CreditCard, color: "gradient-secondary" };
       default:
         return { action: "interacted with EverWish", icon: Gift, color: "btn-primary" };
     }
