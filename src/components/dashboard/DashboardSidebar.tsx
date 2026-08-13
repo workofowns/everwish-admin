@@ -12,6 +12,7 @@ import {
   Mail,
   Image,
   Flame,
+  Coins,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -21,6 +22,7 @@ const navItems = [
   { icon: Layers, label: "Categories", path: "/categories" },
   { icon: LayoutGrid, label: "Templates", path: "/templates" },
   { icon: Flame, label: "Trending", path: "/trending-templates" },
+  { icon: Coins, label: "Rates", path: "/currency-rates" },
   { icon: Sparkles, label: "Wishes", path: "/wishes" },
   { icon: Users, label: "Users", path: "/users" },
   { icon: Image, label: "S3", path: "/media" },

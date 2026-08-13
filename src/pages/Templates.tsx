@@ -52,11 +52,22 @@ interface Template {
   tags: string[];
   preview_images: string[];
   preview_video_url?: string | null;
+  price?: number;
+  prices?: Record<string, number>;
 }
 
 interface TemplatesResponse {
   rows: Template[];
   total: number;
+}
+
+interface CurrencyRate {
+  id: string;
+  currency: string;
+  label: string;
+  symbol: string;
+  rate: number;
+  is_active: boolean;
 }
 
 const COMMON_TAGS = [
@@ -84,6 +95,7 @@ const Templates = () => {
   const [newDescription, setNewDescription] = useState("");
   const [newThumbnailUrl, setNewThumbnailUrl] = useState("");
   const [newType, setNewType] = useState<"free" | "premium">("free");
+  const [newPrice, setNewPrice] = useState<number>(0);
   const [newComponentName, setNewComponentName] = useState("");
   const [newFields, setNewFields] = useState<FormStep[]>([
     {
@@ -120,6 +132,13 @@ const Templates = () => {
     queryKey: ["sub-categories"],
     queryFn: () => fetchApi("/sub-categories"),
   });
+
+  const { data: ratesData } = useQuery({
+    queryKey: ["adminCurrencyRates"],
+    queryFn: () => fetchApi("/currency-rates"),
+  });
+
+  const currencyRates: CurrencyRate[] = ratesData?.rates || [];
 
 
   const templates = data?.rows || [];
@@ -223,6 +242,7 @@ const Templates = () => {
     setNewTemplateName("");
     setNewDescription("");
     setNewType("free");
+    setNewPrice(0);
     setNewComponentName("");
     setNewTags([]);
     setTagInput("");
@@ -298,6 +318,10 @@ const Templates = () => {
     }
     if (!newThumbnailUrl && !pendingThumbnailFile) {
       toast.error("Cover Thumbnail image is required");
+      return;
+    }
+    if (newType === "premium" && (!newPrice || newPrice <= 0)) {
+      toast.error("Premium template must have a price in INR (greater than 0)");
       return;
     }
 
@@ -437,6 +461,7 @@ const Templates = () => {
       thumbnailUrl,
       slug,
       type: newType,
+      price: newType === "premium" ? Math.round(newPrice * 100) : 0,
       componentKey: trimmedComponentKey,
       formFields: processedFields,
       subCategoryId: selectedSubCategoryId,
@@ -459,6 +484,7 @@ const Templates = () => {
     setNewTemplateName(template.template_name || "");
     setNewDescription(template.description || "");
     setNewType(template.type);
+    setNewPrice((template.price || 0) / 100);
     setNewComponentName(template.component_key);
     let fieldsToEdit = template.form_fields || [];
     if (fieldsToEdit.length > 0 && !('fields' in fieldsToEdit[0])) {
@@ -679,6 +705,50 @@ const Templates = () => {
                         </div>
                       </div>
                     </div>
+
+                    {/* Price Input & Auto-Conversion Preview (Only when Premium) */}
+                    {newType === "premium" && (
+                      <div className="space-y-2 p-4 bg-purple-50/50 rounded-xl border border-purple-100">
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold uppercase tracking-wider text-purple-900 flex items-center justify-between">
+                            <span>Price in INR (₹)</span>
+                            <span className="text-[9px] font-normal text-purple-600">Base Currency for auto-conversion</span>
+                          </label>
+                          <div className="relative">
+                            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-purple-600">₹</span>
+                            <input
+                              type="number"
+                              min="1"
+                              step="1"
+                              value={newPrice || ""}
+                              onChange={e => setNewPrice(Math.max(0, parseFloat(e.target.value) || 0))}
+                              placeholder="e.g. 299"
+                              className="w-full pl-8 pr-3.5 py-2.5 rounded-xl bg-white border border-purple-200 text-sm font-bold text-slate-800 outline-none focus:ring-2 focus:ring-purple-400/20 focus:border-purple-400 transition-all placeholder:font-normal placeholder:text-slate-300"
+                            />
+                          </div>
+                        </div>
+
+                        {newPrice > 0 && (
+                          <div className="pt-2 border-t border-purple-100/80">
+                            <p className="text-[9px] font-bold uppercase tracking-wider text-purple-700 mb-1.5">
+                              Auto-Converted Global Prices:
+                            </p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {currencyRates
+                                .filter(r => r.currency !== "INR" && r.is_active)
+                                .map(r => (
+                                  <span
+                                    key={r.currency}
+                                    className="text-[10px] bg-white px-2 py-0.5 rounded-md border border-purple-200 font-semibold text-purple-900 shadow-xs"
+                                  >
+                                    {r.symbol}{(newPrice * r.rate).toFixed(2)} <span className="text-[8px] font-bold text-purple-500">{r.currency}</span>
+                                  </span>
+                                ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
 
                     {/* Visibility Toggle */}
@@ -914,7 +984,17 @@ const Templates = () => {
                   </div>
 
                   <div className="flex items-center gap-1 shrink-0">
-                    <span className="text-[9px] font-black text-emerald-500 uppercase">Free</span>
+                    {template.type === "free" ? (
+                      <span className="text-[9px] font-black text-emerald-500 uppercase">Free</span>
+                    ) : template.price && template.price > 0 ? (
+                      <span className="text-[9px] font-black text-purple-600 uppercase bg-purple-50 px-1.5 py-0.5 rounded border border-purple-200">
+                        ₹{(template.price / 100).toLocaleString("en-IN")}
+                      </span>
+                    ) : (
+                      <span className="text-[9px] font-black text-amber-500 uppercase bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                        No Price
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
