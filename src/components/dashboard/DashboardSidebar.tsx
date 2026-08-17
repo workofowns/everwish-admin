@@ -13,6 +13,7 @@ import {
   Image,
   Flame,
   Coins,
+  CreditCard,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -23,6 +24,7 @@ const navItems = [
   { icon: LayoutGrid, label: "Templates", path: "/templates" },
   { icon: Flame, label: "Trending", path: "/trending-templates" },
   { icon: Coins, label: "Rates", path: "/currency-rates" },
+  { icon: CreditCard, label: "Payments", path: "/payments" },
   { icon: Sparkles, label: "Wishes", path: "/wishes" },
   { icon: Users, label: "Users", path: "/users" },
   { icon: Image, label: "S3", path: "/media" },

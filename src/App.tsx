@@ -18,6 +18,7 @@ import AIWaitlist from "./pages/AIWaitlist";
 import Analytics from "./pages/Analytics";
 import Media from "./pages/Media";
 import CurrencyRates from "./pages/CurrencyRates";
+import PaymentHistory from "./pages/PaymentHistory";
 import './App.scss';
 
 const queryClient = new QueryClient();
@@ -44,6 +45,7 @@ const App = () => (
           <Route path="/templates" element={<RequireAuth><Templates /></RequireAuth>} />
           <Route path="/trending-templates" element={<RequireAuth><TrendingTemplates /></RequireAuth>} />
           <Route path="/currency-rates" element={<RequireAuth><CurrencyRates /></RequireAuth>} />
+          <Route path="/payments" element={<RequireAuth><PaymentHistory /></RequireAuth>} />
           <Route path="/wishes" element={<RequireAuth><Wishes /></RequireAuth>} />
           <Route path="/contact" element={<RequireAuth><ContactMessages /></RequireAuth>} />
           <Route path="/feedback" element={<RequireAuth><FeedbackList /></RequireAuth>} />
