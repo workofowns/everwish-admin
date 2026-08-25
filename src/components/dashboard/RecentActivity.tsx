@@ -16,11 +16,11 @@ const RecentActivity = () => {
   const getActivityConfig = (type: string) => {
     switch (type) {
       case 'user_signup':
-        return { action: "joined EverWish", icon: UserPlus, color: "btn-primary" };
+        return { action: "joined WishForMoment", icon: UserPlus, color: "btn-primary" };
       case 'wish_created':
         return { action: "created a wish", icon: Sparkles, color: "gradient-accent" };
       default:
-        return { action: "interacted with EverWish", icon: Gift, color: "btn-primary" };
+        return { action: "interacted with WishForMoment", icon: Gift, color: "btn-primary" };
     }
   };
 

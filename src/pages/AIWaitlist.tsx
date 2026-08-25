@@ -172,7 +172,7 @@ const AIWaitlist = () => {
                             {copiedId === item.id ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
                           </button>
                           <a
-                            href={`mailto:${item.email}?subject=EverWish AI Waitlist Update`}
+                            href={`mailto:${item.email}?subject=WishForMoment AI Waitlist Update`}
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary text-white text-xs font-bold hover:opacity-90 transition shadow-sm"
                           >
                             <Mail className="w-3 h-3" /> Reach Out

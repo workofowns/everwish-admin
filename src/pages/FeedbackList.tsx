@@ -257,7 +257,7 @@ const FeedbackList = () => {
                   {/* Actions */}
                   <div className="mt-6 flex items-center gap-3">
                     <a
-                      href={`mailto:${selected.email}?subject=Re: Your EverWish Feedback`}
+                      href={`mailto:${selected.email}?subject=Re: Your WishForMoment Feedback`}
                       className="flex-1 py-3 rounded-2xl bg-primary text-white font-bold text-sm hover:opacity-90 transition flex items-center justify-center gap-2 shadow-lg"
                     >
                       <Mail size={15} /> Reply via Email

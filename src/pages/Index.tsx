@@ -26,7 +26,7 @@ const Index = () => {
             <h1 className="text-3xl font-bold tracking-tight text-foreground">
               Welcome back, <span className="text-gradient-primary">Admin</span>
             </h1>
-            <p className="text-muted-foreground mt-1">Here's what's happening with EverWish today.</p>
+            <p className="text-muted-foreground mt-1">Here's what's happening with WishForMoment today.</p>
           </div>
           {!localStorage.getItem("adminToken") && (
              <div className="bg-red-50 text-red-600 px-4 py-2 rounded-xl text-sm font-semibold border border-red-200 shadow-sm">
