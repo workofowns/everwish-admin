@@ -395,7 +395,7 @@ const PaymentHistory = () => {
                               <div>
                                 <p className="text-muted-foreground mb-0.5">Wish</p>
                                 <a
-                                  href={`${import.meta.env.VITE_FRONTEND_URL ?? "https://everwish.in"}/wish/${row.wish_id}`}
+                                  href={`${import.meta.env.VITE_FRONTEND_URL ?? "https://wishformoment.com"}/wish/${row.wish_id}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="inline-flex items-center gap-1 font-semibold text-primary hover:underline"

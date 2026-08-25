@@ -775,7 +775,7 @@ const Login = () => {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="admin@everwish.com"
+                    placeholder="admin@wishformoment.com"
                     autoFocus
                     className="w-full px-5 py-3.5 rounded-xl bg-muted/50 text-base font-semibold outline-none focus:ring-2 focus:ring-primary/40 focus:bg-muted transition-all text-foreground"
                     disabled={isLoading}

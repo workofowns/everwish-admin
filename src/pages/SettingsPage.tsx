@@ -4,9 +4,9 @@ import { Globe, Bell, Shield, Palette } from "lucide-react";
 
 const sections = [
   { icon: Globe, title: "General", desc: "App name, logo, default language", fields: [
-    { label: "App Name", value: "EverWish", type: "text" },
+    { label: "App Name", value: "WishForMoment", type: "text" },
     { label: "Default Template", value: "Standard Wish", type: "text" },
-    { label: "Support Email", value: "support@everwish.com", type: "text" },
+    { label: "Support Email", value: "support@wishformoment.com", type: "text" },
   ]},
   { icon: Bell, title: "Notifications", desc: "Email and push notification preferences", fields: [
     { label: "New User Alerts", value: true, type: "toggle" },
