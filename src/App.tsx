@@ -8,6 +8,7 @@ import Categories from "./pages/Categories";
 import Templates from "./pages/Templates";
 import TrendingTemplates from "./pages/TrendingTemplates";
 import UsersPage from "./pages/UsersPage";
+import UserDetailPage from "./pages/UserDetailPage";
 import SettingsPage from "./pages/SettingsPage";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
@@ -53,6 +54,7 @@ const App = () => (
           <Route path="/feedback" element={<RequireAuth><FeedbackList /></RequireAuth>} />
           <Route path="/ai-waitlist" element={<RequireAuth><AIWaitlist /></RequireAuth>} />
           <Route path="/users" element={<RequireAuth><UsersPage /></RequireAuth>} />
+          <Route path="/users/:id" element={<RequireAuth><UserDetailPage /></RequireAuth>} />
           <Route path="/media" element={<RequireAuth><Media /></RequireAuth>} />
           <Route path="/settings" element={<RequireAuth><SettingsPage /></RequireAuth>} />
           <Route path="*" element={<NotFound />} />

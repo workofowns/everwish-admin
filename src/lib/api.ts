@@ -42,7 +42,20 @@ export const fetchApi = async (endpoint: string, options: RequestInit = {}) => {
     throw new Error(errorData.error?.message || errorData.message || `API Error: ${res.statusText}`);
   }
 
-  return res.json();
+  if (res.status === 204) {
+    return null;
+  }
+
+  const text = await res.text();
+  if (!text || text.trim() === "") {
+    return null;
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
 };
 
 // ── Media Upload utility (S3 + CloudFront) ───────────────────────────────────

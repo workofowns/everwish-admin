@@ -1,11 +1,12 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchApi } from "@/lib/api";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import {
   Search, ChevronDown, ShieldCheck, ShieldAlert, BadgeCheck,
-  Trash2, UserCog, Loader2,
+  Trash2, UserCog, Loader2, Eye, ArrowRight, UserCheck
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -29,6 +30,7 @@ interface UsersResponse {
 // ── Main Component ────────────────────────────────────────────────────────────
 
 const UsersPage = () => {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [search, setSearch]             = useState("");
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
@@ -74,7 +76,7 @@ const UsersPage = () => {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search users..."
+              placeholder="Search users by name or email..."
               className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-card border border-border text-sm outline-none focus:ring-2 focus:ring-primary/30"
             />
           </div>
@@ -83,8 +85,8 @@ const UsersPage = () => {
         {/* Users Table */}
         <div className="glass-card rounded-2xl overflow-hidden shadow-sm border border-border/50">
           {/* Header row */}
-          <div className="grid grid-cols-[1fr_1.2fr_0.55fr_0.7fr_0.4fr] gap-4 px-6 py-4 bg-muted/30 border-b border-border/50">
-            {["Name", "Email", "Role", "Joined", ""].map((h) => (
+          <div className="grid grid-cols-[1fr_1.1fr_0.5fr_0.65fr_0.65fr] gap-4 px-6 py-4 bg-muted/30 border-b border-border/50">
+            {["Name", "Email", "Role", "Joined", "Actions"].map((h) => (
               <span
                 key={h}
                 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground"
@@ -117,7 +119,7 @@ const UsersPage = () => {
               >
                 {/* Row */}
                 <div
-                  className={`grid grid-cols-[1fr_1.2fr_0.55fr_0.7fr_0.4fr] gap-4 px-6 py-4 transition-all cursor-pointer items-center group border-b border-border/30 ${
+                  className={`grid grid-cols-[1fr_1.1fr_0.5fr_0.65fr_0.65fr] gap-4 px-6 py-4 transition-all cursor-pointer items-center group border-b border-border/30 ${
                     expandedUser === user.id
                       ? "bg-primary/5"
                       : "hover:bg-muted/30"
@@ -144,7 +146,7 @@ const UsersPage = () => {
                       </p>
                       {user.is_verified && (
                         <span className="flex items-center gap-1 text-[8px] font-black text-blue-500 uppercase tracking-widest mt-0.5">
-                          <BadgeCheck className="w-2 h-2" /> Verified
+                          <BadgeCheck className="w-2.5 h-2.5" /> Verified
                         </span>
                       )}
                     </div>
@@ -165,13 +167,28 @@ const UsersPage = () => {
                     {format(new Date(user.created_at), "MMM d, yyyy")}
                   </span>
 
-                  {/* Chevron */}
-                  <div className="flex justify-end">
-                    <ChevronDown
-                      className={`w-4 h-4 text-muted-foreground transition-transform ${
-                        expandedUser === user.id ? "rotate-180 text-primary" : ""
-                      }`}
-                    />
+                  {/* Action & Chevron */}
+                  <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/users/${user.id}`)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-primary bg-primary/10 hover:bg-primary hover:text-white transition-all shadow-none"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>Details</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setExpandedUser(expandedUser === user.id ? null : user.id)}
+                      className="p-1 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <ChevronDown
+                        className={`w-4 h-4 transition-transform ${
+                          expandedUser === user.id ? "rotate-180 text-primary" : ""
+                        }`}
+                      />
+                    </button>
                   </div>
                 </div>
 
@@ -184,14 +201,14 @@ const UsersPage = () => {
                       exit={{ height: 0, opacity: 0 }}
                       className="overflow-hidden"
                     >
-                      <div className="p-6 ml-6 mr-6 mb-4 mt-1 rounded-[1.5rem] bg-white border border-border flex flex-col lg:flex-row gap-6">
+                      <div className="p-6 ml-6 mr-6 mb-4 mt-1 rounded-[1.5rem] bg-white border border-border flex flex-col lg:flex-row gap-6 shadow-sm">
                         
                         {/* ── Left: User Info ── */}
                         <div className="flex-1 space-y-4">
                           <div className="flex items-center gap-2 mb-2">
                             <UserCog className="w-4 h-4 text-primary" />
                             <h4 className="text-xs font-black uppercase tracking-widest text-foreground">
-                              Management Console
+                              Quick Management
                             </h4>
                           </div>
                           <div className="grid grid-cols-2 gap-y-3 gap-x-6 text-[11px] font-medium text-muted-foreground">
@@ -199,7 +216,7 @@ const UsersPage = () => {
                               <strong className="text-foreground uppercase tracking-widest text-[9px] mb-0.5 block opacity-50">
                                 System ID
                               </strong>
-                              <span className="font-mono text-[10px]">{user.id}</span>
+                              <span className="font-mono text-[10px] select-all">{user.id}</span>
                             </div>
                             <div>
                               <strong className="text-foreground uppercase tracking-widest text-[9px] mb-0.5 block opacity-50">
@@ -223,7 +240,15 @@ const UsersPage = () => {
                         </div>
 
                         {/* ── Right: Action Buttons ── */}
-                        <div className="flex flex-col gap-2 min-w-[200px]">
+                        <div className="flex flex-col gap-2 min-w-[220px]">
+                          <button
+                            onClick={() => navigate(`/users/${user.id}`)}
+                            className="flex items-center justify-between px-4 py-2.5 rounded-xl btn-primary text-white text-[11px] font-black uppercase tracking-wider group shadow-sm hover:scale-[1.02] active:scale-[0.98] transition-all"
+                          >
+                            <span>Open User Details</span>
+                            <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                          </button>
+
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -234,7 +259,7 @@ const UsersPage = () => {
                             }}
                             className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-muted hover:bg-blue-50 transition-colors group"
                           >
-                            <span className="text-[10px] font-bold">Verification</span>
+                            <span className="text-[10px] font-bold">Toggle Verification</span>
                             <BadgeCheck
                               className={`w-4 h-4 ${
                                 user.is_verified
@@ -254,7 +279,7 @@ const UsersPage = () => {
                               )
                                 deleteMutation.mutate(user.id);
                             }}
-                            className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-muted hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors group mt-2"
+                            className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-muted hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors group"
                           >
                             <span className="text-[10px] font-bold">Delete Account</span>
                             <Trash2 className="w-4 h-4" />
