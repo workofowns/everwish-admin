@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchApi, uploadMedia, MEDIA_FOLDERS } from "@/lib/api";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { GradientColorPicker } from "@/components/ui/GradientColorPicker";
-import { Plus, ChevronRight, Edit2, Trash2, FolderOpen, X, Check, Upload, Image as ImageIcon } from "lucide-react";
+import { Plus, ChevronRight, Edit2, Trash2, FolderOpen, X, Check, Upload, Tag } from "lucide-react";
 import { toast } from "sonner";
 
 interface SubCategory {
@@ -12,7 +12,9 @@ interface SubCategory {
   category_id: string;
   name: string;
   slug: string;
+  title?: string;
   description?: string;
+  tags?: string[];
   icon: string;
   image_url?: string;
   theme_color?: string;
@@ -23,7 +25,9 @@ interface Category {
   id: string;
   name: string;
   slug: string;
+  title?: string;
   description?: string;
+  tags?: string[];
   icon: string;
   image_url?: string;
   theme_color?: string;
@@ -39,6 +43,9 @@ const Categories = () => {
   const [newCatName, setNewCatName] = useState("");
   const [newCatSlug, setNewCatSlug] = useState("");
   const [newCatDesc, setNewCatDesc] = useState("");
+  const [newCatTitle, setNewCatTitle] = useState("");
+  const [newCatDescription, setNewCatDescription] = useState("");
+  const [newCatTags, setNewCatTags] = useState("");
   const [newCatIcon, setNewCatIcon] = useState("📁");
   const [newCatImageUrl, setNewCatImageUrl] = useState("");
   const [newCatColor, setNewCatColor] = useState("#6C41CF");
@@ -47,15 +54,18 @@ const Categories = () => {
   const [newSubName, setNewSubName] = useState("");
   const [newSubSlug, setNewSubSlug] = useState("");
   const [newSubDesc, setNewSubDesc] = useState("");
+  const [newSubTitle, setNewSubTitle] = useState("");
+  const [newSubDescription, setNewSubDescription] = useState("");
+  const [newSubTags, setNewSubTags] = useState("");
   const [newSubIcon, setNewSubIcon] = useState("📄");
   const [newSubImageUrl, setNewSubImageUrl] = useState("");
   const [newSubColor, setNewSubColor] = useState("#FF8BC4");
 
   const [editingCatId, setEditingCatId] = useState<string | null>(null);
-  const [editCatData, setEditCatData] = useState({ name: "", slug: "", description: "", icon: "", imageUrl: "", themeColor: "" });
 
+  const [editCatData, setEditCatData] = useState({ name: "", slug: "", title: "", description: "", tags: "", icon: "", imageUrl: "", themeColor: "" });
   const [editingSubId, setEditingSubId] = useState<string | null>(null);
-  const [editSubData, setEditSubData] = useState({ name: "", slug: "", description: "", icon: "", imageUrl: "", themeColor: "" });
+  const [editSubData, setEditSubData] = useState({ name: "", slug: "", title: "", description: "", tags: "", icon: "", imageUrl: "", themeColor: "" });
 
   const { data: catsRes } = useQuery({ queryKey: ["adminCategories"], queryFn: () => fetchApi("/categories") });
   const { data: subsRes } = useQuery({ queryKey: ["adminSubCategories"], queryFn: () => fetchApi("/sub-categories") });
@@ -104,7 +114,7 @@ const Categories = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["adminCategories"] });
       toast.success("Category added");
-      setNewCatName(""); setNewCatSlug(""); setNewCatDesc(""); setNewCatIcon("📁"); setNewCatImageUrl(""); setNewCatColor("#6C41CF"); setShowAddCategory(false);
+      setNewCatName(""); setNewCatSlug(""); setNewCatTitle(""); setNewCatDescription(""); setNewCatTags(""); setNewCatIcon("📁"); setNewCatImageUrl(""); setNewCatColor("#6C41CF"); setShowAddCategory(false);
     }
   });
 
@@ -113,7 +123,7 @@ const Categories = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["adminSubCategories"] });
       toast.success("Subcategory added");
-      setNewSubName(""); setNewSubSlug(""); setNewSubDesc(""); setNewSubIcon("📄"); setNewSubImageUrl(""); setNewSubColor("#FF8BC4"); setAddingSubTo(null);
+      setNewSubName(""); setNewSubSlug(""); setNewSubTitle(""); setNewSubDescription(""); setNewSubTags(""); setNewSubIcon("📄"); setNewSubImageUrl(""); setNewSubColor("#FF8BC4"); setAddingSubTo(null);
     }
   });
 
@@ -151,6 +161,9 @@ const Categories = () => {
       name: newCatName,
       slug: newCatSlug || newCatName.toLowerCase().replace(/\s+/g, "-"),
       description: newCatDesc.trim() || undefined,
+      title: newCatTitle.trim() || null,
+      description: newCatDescription.trim() || null,
+      tags: newCatTags.split(',').map(s => s.trim()).filter(Boolean),
       icon: newCatIcon,
       imageUrl: newCatImageUrl,
       themeColor: newCatColor
@@ -164,6 +177,9 @@ const Categories = () => {
       name: newSubName,
       slug: newSubSlug || newSubName.toLowerCase().replace(/\s+/g, "-"),
       description: newSubDesc.trim() || undefined,
+      title: newSubTitle.trim() || null,
+      description: newSubDescription.trim() || null,
+      tags: newSubTags.split(',').map(s => s.trim()).filter(Boolean),
       icon: newSubIcon,
       imageUrl: newSubImageUrl,
       themeColor: newSubColor
@@ -172,26 +188,60 @@ const Categories = () => {
 
   const startEditCategory = (e: React.MouseEvent, cat: Category) => {
     e.stopPropagation();
-    setEditCatData({ name: cat.name, slug: cat.slug, description: cat.description || "", icon: cat.icon || "📁", imageUrl: cat.image_url || "", themeColor: cat.theme_color || "#A37FF6" });
+    setEditCatData({
+      name: cat.name,
+      slug: cat.slug,
+      title: cat.title || "",
+      description: cat.description || "",
+      tags: (cat.tags || []).join(", "),
+      icon: cat.icon || "📁",
+      imageUrl: cat.image_url || "",
+      themeColor: cat.theme_color || "#A37FF6"
+    });
     setEditingCatId(cat.id);
   };
 
   const saveEditCategory = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     if (!editCatData.name.trim()) return;
-    updateCatMutation.mutate({ id, data: editCatData });
+    updateCatMutation.mutate({
+      id,
+      data: {
+        ...editCatData,
+        title: editCatData.title.trim() || null,
+        description: editCatData.description.trim() || null,
+        tags: editCatData.tags.split(',').map(s => s.trim()).filter(Boolean),
+      }
+    });
   };
 
   const startEditSubcategory = (e: React.MouseEvent, sub: SubCategory) => {
     e.stopPropagation();
-    setEditSubData({ name: sub.name, slug: sub.slug, description: sub.description || "", icon: sub.icon || "📄", imageUrl: sub.image_url || "", themeColor: sub.theme_color || "#FF8BC4" });
+    setEditSubData({
+      name: sub.name,
+      slug: sub.slug,
+      title: sub.title || "",
+      description: sub.description || "",
+      tags: (sub.tags || []).join(", "),
+      icon: sub.icon || "📄",
+      imageUrl: sub.image_url || "",
+      themeColor: sub.theme_color || "#FF8BC4"
+    });
     setEditingSubId(sub.id);
   };
 
   const saveEditSubcategory = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     if (!editSubData.name.trim()) return;
-    updateSubCatMutation.mutate({ id, data: editSubData });
+    updateSubCatMutation.mutate({
+      id,
+      data: {
+        ...editSubData,
+        title: editSubData.title.trim() || null,
+        description: editSubData.description.trim() || null,
+        tags: editSubData.tags.split(',').map(s => s.trim()).filter(Boolean),
+      }
+    });
   };
 
   const deleteCategory = (e: React.MouseEvent, id: string) => {
@@ -226,7 +276,7 @@ const Categories = () => {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
-              className="glass-card rounded-2xl p-5 mb-5 overflow-hidden"
+              className="glass-card rounded-2xl p-5 mb-5 overflow-hidden space-y-3"
             >
               <div className="space-y-3">
                 <div className="flex flex-wrap items-center gap-4">
@@ -268,6 +318,28 @@ const Categories = () => {
                   className="w-full px-4 py-2 rounded-xl bg-muted text-xs text-foreground focus:ring-2 focus:ring-primary/30 outline-none"
                 />
               </div>
+
+              {/* Title (Meta Title), Description & Tags */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1 border-t border-border/40">
+                <input
+                  value={newCatTitle}
+                  onChange={e => setNewCatTitle(e.target.value)}
+                  placeholder="Meta Title (e.g. Birthday Wish Templates — WishForMoment)"
+                  className="w-full px-4 py-2.5 rounded-xl bg-muted text-xs font-medium focus:ring-2 focus:ring-primary/30 outline-none"
+                />
+                <input
+                  value={newCatDescription}
+                  onChange={e => setNewCatDescription(e.target.value)}
+                  placeholder="Description / Meta Description for SEO"
+                  className="w-full px-4 py-2.5 rounded-xl bg-muted text-xs font-medium focus:ring-2 focus:ring-primary/30 outline-none"
+                />
+                <input
+                  value={newCatTags}
+                  onChange={e => setNewCatTags(e.target.value)}
+                  placeholder="Tags / Keywords (comma-separated)"
+                  className="w-full px-4 py-2.5 rounded-xl bg-muted text-xs font-medium focus:ring-2 focus:ring-primary/30 outline-none"
+                />
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -289,7 +361,7 @@ const Categories = () => {
                 onClick={() => setExpandedId(expandedId === cat.id ? null : cat.id)}
               >
                 {editingCatId === cat.id ? (
-                  <div className="flex-1 space-y-3" onClick={e => e.stopPropagation()}>
+                  <div className="flex-1 flex flex-col gap-3" onClick={e => e.stopPropagation()}>
                     <div className="flex flex-wrap items-center gap-4">
                       <div className="flex items-center gap-2">
                         <input value={editCatData.icon} onChange={e => setEditCatData({ ...editCatData, icon: e.target.value })} className="w-11 h-11 text-center text-xl rounded-xl bg-muted border-0 focus:ring-2 focus:ring-primary/30" />
@@ -323,6 +395,28 @@ const Categories = () => {
                       placeholder="Category description"
                       className="w-full px-4 py-2 rounded-xl bg-muted text-xs outline-none"
                     />
+
+                    {/* Meta Title, Description & Tags in Edit */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1 border-t border-border/40">
+                      <input
+                        value={editCatData.title}
+                        onChange={e => setEditCatData({ ...editCatData, title: e.target.value })}
+                        placeholder="Meta Title"
+                        className="w-full px-4 py-2 rounded-xl bg-muted text-xs font-medium outline-none"
+                      />
+                      <input
+                        value={editCatData.description}
+                        onChange={e => setEditCatData({ ...editCatData, description: e.target.value })}
+                        placeholder="Description / Meta Description"
+                        className="w-full px-4 py-2 rounded-xl bg-muted text-xs font-medium outline-none"
+                      />
+                      <input
+                        value={editCatData.tags}
+                        onChange={e => setEditCatData({ ...editCatData, tags: e.target.value })}
+                        placeholder="Tags / Keywords (comma-separated)"
+                        className="w-full px-4 py-2 rounded-xl bg-muted text-xs font-medium outline-none"
+                      />
+                    </div>
                   </div>
                 ) : (
                   <>
@@ -345,7 +439,7 @@ const Categories = () => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p
-                        className="font-black text-lg"
+                        className="font-black text-lg truncate"
                         style={
                           cat?.theme_color
                             ? cat.theme_color.includes("gradient")
@@ -356,16 +450,29 @@ const Categories = () => {
                       >
                         {cat.name}
                       </p>
-                      <p className="text-xs text-muted-foreground font-bold tracking-widest">/{cat.slug}</p>
+                      <p className="text-xs text-muted-foreground font-bold tracking-widest truncate">/{cat.slug}</p>
+                      {cat.title && (
+                        <p className="text-[11px] text-primary/80 font-medium truncate mt-0.5">Meta Title: {cat.title}</p>
+                      )}
                       {cat.description && (
-                        <p className="text-xs text-muted-foreground/80 mt-1 line-clamp-1">{cat.description}</p>
+                        <p className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">{cat.description}</p>
+                      )}
+                      {cat.tags && cat.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {cat.tags.map((tag, idx) => (
+                            <span key={idx} className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md bg-muted text-[10px] font-medium text-muted-foreground">
+                              <Tag className="w-2.5 h-2.5 opacity-60" />
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
                       )}
                     </div>
-                    <div className="px-3 py-1.5 rounded-full bg-muted/50 border border-border flex items-center gap-2">
+                    <div className="px-3 py-1.5 rounded-full bg-muted/50 border border-border flex items-center gap-2 shrink-0">
                       <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
                       <span className="text-[10px] font-black text-muted-foreground uppercase">{cat.subcategories.length} Entities</span>
                     </div>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 shrink-0">
                       <button onClick={(e) => startEditCategory(e, cat)} className="p-2 rounded-xl hover:bg-primary/10 text-muted-foreground hover:text-primary transition-all">
                         <Edit2 className="w-4 h-4" />
                       </button>
@@ -373,7 +480,7 @@ const Categories = () => {
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
-                    <div className={`p-2 rounded-xl bg-muted/20 transition-transform ${expandedId === cat.id ? "rotate-90 bg-primary/10 text-primary" : ""}`}>
+                    <div className={`p-2 rounded-xl bg-muted/20 transition-transform shrink-0 ${expandedId === cat.id ? "rotate-90 bg-primary/10 text-primary" : ""}`}>
                       <ChevronRight className="w-4 h-4" />
                     </div>
                   </>
@@ -391,9 +498,9 @@ const Categories = () => {
                   >
                     <div className="p-6 pl-12 space-y-3">
                       {cat.subcategories.map(sub => (
-                        <div key={sub.id} className="flex items-center gap-4 p-4 rounded-2xl bg-white border border-border/50 shadow-sm hover:shadow-md transition-shadow group">
+                        <div key={sub.id} className="flex flex-col gap-2 p-4 rounded-2xl bg-white border border-border/50 shadow-sm hover:shadow-md transition-shadow group">
                           {editingSubId === sub.id ? (
-                            <div className="flex-1 space-y-2.5">
+                            <div className="flex flex-col gap-3">
                               <div className="flex flex-wrap items-center gap-3">
                                 <div className="flex items-center gap-2">
                                   <input value={editSubData.icon} onChange={e => setEditSubData({ ...editSubData, icon: e.target.value })} className="w-10 h-10 text-center text-lg rounded-xl bg-muted border-0" />
@@ -421,17 +528,33 @@ const Categories = () => {
                                   <button onClick={() => setEditingSubId(null)} className="p-2 rounded-xl bg-muted text-muted-foreground"><X className="w-4 h-4" /></button>
                                 </div>
                               </div>
-                              <input
-                                value={editSubData.description}
-                                onChange={e => setEditSubData({ ...editSubData, description: e.target.value })}
-                                placeholder="Subcategory description"
-                                className="w-full px-3.5 py-1.5 rounded-xl bg-muted text-xs outline-none"
-                              />
-                            </div>
+
+                              {/* Meta Title, Description & Tags in Subcategory Edit */}
+                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 border-t border-border/30">
+                                <input
+                                  value={editSubData.title}
+                                  onChange={e => setEditSubData({ ...editSubData, title: e.target.value })}
+                                  placeholder="Meta Title"
+                                  className="w-full px-3 py-1.5 rounded-xl bg-muted text-xs font-medium outline-none"
+                                />
+                                <input
+                                  value={editSubData.description}
+                                  onChange={e => setEditSubData({ ...editSubData, description: e.target.value })}
+                                  placeholder="Description / Meta Description"
+                                  className="w-full px-3 py-1.5 rounded-xl bg-muted text-xs font-medium outline-none"
+                                />
+                                <input
+                                  value={editSubData.tags}
+                                  onChange={e => setEditSubData({ ...editSubData, tags: e.target.value })}
+                                  placeholder="Tags / Keywords (comma-separated)"
+                                  className="w-full px-3 py-1.5 rounded-xl bg-muted text-xs font-medium outline-none"
+                                />
+                              </div>
+                            </div >
                           ) : (
-                            <>
+                            <div className="flex items-center gap-4">
                               <div
-                                className="w-10 h-10 rounded-xl flex items-center justify-center relative overflow-hidden ring-1 ring-border/50"
+                                className="w-10 h-10 rounded-xl flex items-center justify-center relative overflow-hidden ring-1 ring-border/50 shrink-0"
                                 style={sub.color.includes("gradient") ? { background: sub.color } : { backgroundColor: sub.color + "15" }}
                               >
                                 {sub.image_url ? (
@@ -442,7 +565,7 @@ const Categories = () => {
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p
-                                  className="text-sm font-black text-foreground"
+                                  className="text-sm font-black text-foreground truncate"
                                   style={
                                     sub?.theme_color
                                       ? sub.theme_color.includes("gradient")
@@ -454,11 +577,25 @@ const Categories = () => {
                                   {sub.name}
                                 </p>
                                 <p className="text-[10px] text-muted-foreground font-bold tracking-widest mt-0.5">/{sub.slug}</p>
-                                {sub.description && (
-                                  <p className="text-[11px] text-muted-foreground/80 mt-0.5 line-clamp-1">{sub.description}</p>
+                                <p className="text-[10px] text-muted-foreground font-bold tracking-widest truncate">/{sub.slug}</p>
+                                {sub.title && (
+                                  <p className="text-[10px] text-primary/80 font-medium truncate mt-0.5">Meta Title: {sub.title}</p>
                                 )}
-                              </div>
-                              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                {sub.description && (
+                                  <p className="text-[10px] text-muted-foreground line-clamp-1 mt-0.5">{sub.description}</p>
+                                )}
+                                {sub.tags && sub.tags.length > 0 && (
+                                  <div className="flex flex-wrap gap-1 mt-1">
+                                    {sub.tags.map((tag, idx) => (
+                                      <span key={idx} className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md bg-muted text-[9px] font-medium text-muted-foreground">
+                                        <Tag className="w-2 h-2 opacity-60" />
+                                        {tag}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                              </div >
+                              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                                 <button onClick={(e) => startEditSubcategory(e, sub)} className="p-2 rounded-lg hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors">
                                   <Edit2 className="w-4 h-4" />
                                 </button>
@@ -466,15 +603,15 @@ const Categories = () => {
                                   <Trash2 className="w-4 h-4" />
                                 </button>
                               </div>
-                            </>
+                            </div >
                           )}
-                        </div>
+                        </div >
                       ))}
 
                       {/* Add Subcategory Row */}
                       <div className="pt-2">
                         {addingSubTo === cat.id ? (
-                          <div className="p-4 rounded-2xl bg-primary/5 border border-dashed border-primary/30 space-y-2.5">
+                          <div className="flex flex-col gap-3 p-4 rounded-2xl bg-primary/5 border border-dashed border-primary/30">
                             <div className="flex flex-wrap items-center gap-3">
                               <div className="flex items-center gap-2">
                                 <input value={newSubIcon} onChange={e => setNewSubIcon(e.target.value)} placeholder="Icon" className="w-10 h-10 text-center rounded-xl bg-white text-lg outline-none border border-border" />
@@ -502,13 +639,29 @@ const Categories = () => {
                                 <button onClick={() => setAddingSubTo(null)} className="p-2 rounded-xl bg-muted text-muted-foreground"><X className="w-4 h-4" /></button>
                               </div>
                             </div>
-                            <input
-                              value={newSubDesc}
-                              onChange={e => setNewSubDesc(e.target.value)}
-                              placeholder="Subcategory description (optional)"
-                              className="w-full px-3.5 py-1.5 rounded-xl bg-white text-xs outline-none border border-border"
-                            />
-                          </div>
+
+                            {/* Meta Title, Description & Tags in Add Subcategory */}
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 border-t border-border/30">
+                              <input
+                                value={newSubTitle}
+                                onChange={e => setNewSubTitle(e.target.value)}
+                                placeholder="Meta Title (e.g. For Friend — Birthday Wish Templates)"
+                                className="w-full px-3 py-1.5 rounded-xl bg-white text-xs font-medium outline-none border border-border"
+                              />
+                              <input
+                                value={newSubDescription}
+                                onChange={e => setNewSubDescription(e.target.value)}
+                                placeholder="Description / Meta Description"
+                                className="w-full px-3 py-1.5 rounded-xl bg-white text-xs font-medium outline-none border border-border"
+                              />
+                              <input
+                                value={newSubTags}
+                                onChange={e => setNewSubTags(e.target.value)}
+                                placeholder="Tags / Keywords (comma-separated)"
+                                className="w-full px-3 py-1.5 rounded-xl bg-white text-xs font-medium outline-none border border-border"
+                              />
+                            </div>
+                          </div >
                         ) : (
                           <button
                             onClick={() => setAddingSubTo(cat.id)}
@@ -517,16 +670,16 @@ const Categories = () => {
                             <Plus className="w-4 h-4" /> ADD SUB-ENTITY
                           </button>
                         )}
-                      </div>
-                    </div>
-                  </motion.div>
+                      </div >
+                    </div >
+                  </motion.div >
                 )}
-              </AnimatePresence>
-            </motion.div>
+              </AnimatePresence >
+            </motion.div >
           ))}
-        </div>
-      </div>
-    </DashboardLayout>
+        </div >
+      </div >
+    </DashboardLayout >
   );
 };
 
