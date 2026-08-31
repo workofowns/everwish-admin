@@ -160,7 +160,6 @@ const Categories = () => {
     createCatMutation.mutate({
       name: newCatName,
       slug: newCatSlug || newCatName.toLowerCase().replace(/\s+/g, "-"),
-      description: newCatDesc.trim() || undefined,
       title: newCatTitle.trim() || null,
       description: newCatDescription.trim() || null,
       tags: newCatTags.split(',').map(s => s.trim()).filter(Boolean),
@@ -176,7 +175,6 @@ const Categories = () => {
       categoryId: catId,
       name: newSubName,
       slug: newSubSlug || newSubName.toLowerCase().replace(/\s+/g, "-"),
-      description: newSubDesc.trim() || undefined,
       title: newSubTitle.trim() || null,
       description: newSubDescription.trim() || null,
       tags: newSubTags.split(',').map(s => s.trim()).filter(Boolean),
