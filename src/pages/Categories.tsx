@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchApi, uploadMedia, MEDIA_FOLDERS } from "@/lib/api";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { GradientColorPicker } from "@/components/ui/GradientColorPicker";
-import { Plus, ChevronRight, Edit2, Trash2, FolderOpen, X, Check, Upload, Tag } from "lucide-react";
+import { Plus, ChevronRight, Edit2, Trash2, FolderOpen, X, Check, Upload, Tag, Sparkles, Zap } from "lucide-react";
 import { toast } from "sonner";
 
 interface SubCategory {
@@ -19,6 +19,8 @@ interface SubCategory {
   image_url?: string;
   theme_color?: string;
   sort_order: number;
+  featured_position?: number | null;
+  admin_boost?: number;
 }
 
 interface Category {
@@ -32,6 +34,8 @@ interface Category {
   image_url?: string;
   theme_color?: string;
   sort_order: number;
+  featured_position?: number | null;
+  admin_boost?: number;
 }
 
 const Categories = () => {
@@ -49,6 +53,8 @@ const Categories = () => {
   const [newCatIcon, setNewCatIcon] = useState("📁");
   const [newCatImageUrl, setNewCatImageUrl] = useState("");
   const [newCatColor, setNewCatColor] = useState("#6C41CF");
+  const [newCatFeaturedPosition, setNewCatFeaturedPosition] = useState<number | "">("");
+  const [newCatAdminBoost, setNewCatAdminBoost] = useState<number>(0);
 
   const [addingSubTo, setAddingSubTo] = useState<string | null>(null);
   const [newSubName, setNewSubName] = useState("");
@@ -60,12 +66,59 @@ const Categories = () => {
   const [newSubIcon, setNewSubIcon] = useState("📄");
   const [newSubImageUrl, setNewSubImageUrl] = useState("");
   const [newSubColor, setNewSubColor] = useState("#FF8BC4");
+  const [newSubFeaturedPosition, setNewSubFeaturedPosition] = useState<number | "">("");
+  const [newSubAdminBoost, setNewSubAdminBoost] = useState<number>(0);
 
   const [editingCatId, setEditingCatId] = useState<string | null>(null);
 
-  const [editCatData, setEditCatData] = useState({ name: "", slug: "", title: "", description: "", tags: "", icon: "", imageUrl: "", themeColor: "" });
+  const [editCatData, setEditCatData] = useState<{
+    name: string;
+    slug: string;
+    title: string;
+    description: string;
+    tags: string;
+    icon: string;
+    imageUrl: string;
+    themeColor: string;
+    featuredPosition: number | "";
+    adminBoost: number;
+  }>({
+    name: "",
+    slug: "",
+    title: "",
+    description: "",
+    tags: "",
+    icon: "",
+    imageUrl: "",
+    themeColor: "",
+    featuredPosition: "",
+    adminBoost: 0,
+  });
+
   const [editingSubId, setEditingSubId] = useState<string | null>(null);
-  const [editSubData, setEditSubData] = useState({ name: "", slug: "", title: "", description: "", tags: "", icon: "", imageUrl: "", themeColor: "" });
+  const [editSubData, setEditSubData] = useState<{
+    name: string;
+    slug: string;
+    title: string;
+    description: string;
+    tags: string;
+    icon: string;
+    imageUrl: string;
+    themeColor: string;
+    featuredPosition: number | "";
+    adminBoost: number;
+  }>({
+    name: "",
+    slug: "",
+    title: "",
+    description: "",
+    tags: "",
+    icon: "",
+    imageUrl: "",
+    themeColor: "",
+    featuredPosition: "",
+    adminBoost: 0,
+  });
 
   const { data: catsRes } = useQuery({ queryKey: ["adminCategories"], queryFn: () => fetchApi("/categories") });
   const { data: subsRes } = useQuery({ queryKey: ["adminSubCategories"], queryFn: () => fetchApi("/sub-categories") });
@@ -114,7 +167,9 @@ const Categories = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["adminCategories"] });
       toast.success("Category added");
-      setNewCatName(""); setNewCatSlug(""); setNewCatTitle(""); setNewCatDescription(""); setNewCatTags(""); setNewCatIcon("📁"); setNewCatImageUrl(""); setNewCatColor("#6C41CF"); setShowAddCategory(false);
+      setNewCatName(""); setNewCatSlug(""); setNewCatTitle(""); setNewCatDescription(""); setNewCatTags(""); setNewCatIcon("📁"); setNewCatImageUrl(""); setNewCatColor("#6C41CF");
+      setNewCatFeaturedPosition(""); setNewCatAdminBoost(0);
+      setShowAddCategory(false);
     }
   });
 
@@ -123,7 +178,9 @@ const Categories = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["adminSubCategories"] });
       toast.success("Subcategory added");
-      setNewSubName(""); setNewSubSlug(""); setNewSubTitle(""); setNewSubDescription(""); setNewSubTags(""); setNewSubIcon("📄"); setNewSubImageUrl(""); setNewSubColor("#FF8BC4"); setAddingSubTo(null);
+      setNewSubName(""); setNewSubSlug(""); setNewSubTitle(""); setNewSubDescription(""); setNewSubTags(""); setNewSubIcon("📄"); setNewSubImageUrl(""); setNewSubColor("#FF8BC4");
+      setNewSubFeaturedPosition(""); setNewSubAdminBoost(0);
+      setAddingSubTo(null);
     }
   });
 
@@ -165,7 +222,9 @@ const Categories = () => {
       tags: newCatTags.split(',').map(s => s.trim()).filter(Boolean),
       icon: newCatIcon,
       imageUrl: newCatImageUrl,
-      themeColor: newCatColor
+      themeColor: newCatColor,
+      featuredPosition: newCatFeaturedPosition === "" ? null : Number(newCatFeaturedPosition),
+      adminBoost: Number(newCatAdminBoost) || 0,
     });
   };
 
@@ -180,7 +239,9 @@ const Categories = () => {
       tags: newSubTags.split(',').map(s => s.trim()).filter(Boolean),
       icon: newSubIcon,
       imageUrl: newSubImageUrl,
-      themeColor: newSubColor
+      themeColor: newSubColor,
+      featuredPosition: newSubFeaturedPosition === "" ? null : Number(newSubFeaturedPosition),
+      adminBoost: Number(newSubAdminBoost) || 0,
     });
   };
 
@@ -194,7 +255,9 @@ const Categories = () => {
       tags: (cat.tags || []).join(", "),
       icon: cat.icon || "📁",
       imageUrl: cat.image_url || "",
-      themeColor: cat.theme_color || "#A37FF6"
+      themeColor: cat.theme_color || "#A37FF6",
+      featuredPosition: cat.featured_position ?? "",
+      adminBoost: cat.admin_boost ?? 0,
     });
     setEditingCatId(cat.id);
   };
@@ -209,6 +272,8 @@ const Categories = () => {
         title: editCatData.title.trim() || null,
         description: editCatData.description.trim() || null,
         tags: editCatData.tags.split(',').map(s => s.trim()).filter(Boolean),
+        featuredPosition: editCatData.featuredPosition === "" ? null : Number(editCatData.featuredPosition),
+        adminBoost: Number(editCatData.adminBoost) || 0,
       }
     });
   };
@@ -223,7 +288,9 @@ const Categories = () => {
       tags: (sub.tags || []).join(", "),
       icon: sub.icon || "📄",
       imageUrl: sub.image_url || "",
-      themeColor: sub.theme_color || "#FF8BC4"
+      themeColor: sub.theme_color || "#FF8BC4",
+      featuredPosition: sub.featured_position ?? "",
+      adminBoost: sub.admin_boost ?? 0,
     });
     setEditingSubId(sub.id);
   };
@@ -238,6 +305,8 @@ const Categories = () => {
         title: editSubData.title.trim() || null,
         description: editSubData.description.trim() || null,
         tags: editSubData.tags.split(',').map(s => s.trim()).filter(Boolean),
+        featuredPosition: editSubData.featuredPosition === "" ? null : Number(editSubData.featuredPosition),
+        adminBoost: Number(editSubData.adminBoost) || 0,
       }
     });
   };
@@ -315,9 +384,7 @@ const Categories = () => {
                   placeholder="Category description (e.g. Discover personalized greetings for every special milestone)"
                   className="w-full px-4 py-2 rounded-xl bg-muted text-xs text-foreground focus:ring-2 focus:ring-primary/30 outline-none"
                 />
-              </div>
-
-              {/* Title (Meta Title), Description & Tags */}
+                 {/* Title (Meta Title), Description & Tags */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1 border-t border-border/40">
                 <input
                   value={newCatTitle}
@@ -338,9 +405,37 @@ const Categories = () => {
                   className="w-full px-4 py-2.5 rounded-xl bg-muted text-xs font-medium focus:ring-2 focus:ring-primary/30 outline-none"
                 />
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+
+              {/* Ranking & Promotion */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-border/40">
+                <div className="flex items-center gap-2 bg-muted px-3 py-1.5 rounded-xl">
+                  <Sparkles className="w-4 h-4 text-purple-600 shrink-0" />
+                  <input
+                    type="number"
+                    min="1"
+                    value={newCatFeaturedPosition}
+                    onChange={e => setNewCatFeaturedPosition(e.target.value === "" ? "" : Number(e.target.value))}
+                    placeholder="Fixed Pin Position (e.g. 1)"
+                    className="w-full bg-transparent text-xs font-semibold outline-none placeholder:text-muted-foreground"
+                  />
+                </div>
+                <div className="flex items-center gap-2 bg-muted px-3 py-1.5 rounded-xl">
+                  <Zap className="w-4 h-4 text-indigo-600 shrink-0" />
+                  <input
+                    type="number"
+                    min="0"
+                    step="10"
+                    value={newCatAdminBoost || ""}
+                    onChange={e => setNewCatAdminBoost(Number(e.target.value))}
+                    placeholder="Admin Boost Score (e.g. 50)"
+                    className="w-full bg-transparent text-xs font-semibold outline-none placeholder:text-muted-foreground"
+                  />
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
         {/* Category List */}
         <div className="space-y-4">
@@ -415,6 +510,33 @@ const Categories = () => {
                         className="w-full px-4 py-2 rounded-xl bg-muted text-xs font-medium outline-none"
                       />
                     </div>
+
+                    {/* Ranking & Promotion in Edit */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-border/40">
+                      <div className="flex items-center gap-2 bg-muted px-3 py-1.5 rounded-xl">
+                        <Sparkles className="w-4 h-4 text-purple-600 shrink-0" />
+                        <input
+                          type="number"
+                          min="1"
+                          value={editCatData.featuredPosition}
+                          onChange={e => setEditCatData({ ...editCatData, featuredPosition: e.target.value === "" ? "" : Number(e.target.value) })}
+                          placeholder="Fixed Pin Position (e.g. 1)"
+                          className="w-full bg-transparent text-xs font-semibold outline-none placeholder:text-muted-foreground"
+                        />
+                      </div>
+                      <div className="flex items-center gap-2 bg-muted px-3 py-1.5 rounded-xl">
+                        <Zap className="w-4 h-4 text-indigo-600 shrink-0" />
+                        <input
+                          type="number"
+                          min="0"
+                          step="10"
+                          value={editCatData.adminBoost || ""}
+                          onChange={e => setEditCatData({ ...editCatData, adminBoost: Number(e.target.value) })}
+                          placeholder="Admin Boost Score (e.g. 50)"
+                          className="w-full bg-transparent text-xs font-semibold outline-none placeholder:text-muted-foreground"
+                        />
+                      </div>
+                    </div>
                   </div>
                 ) : (
                   <>
@@ -436,18 +558,30 @@ const Categories = () => {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p
-                        className="font-black text-lg truncate"
-                        style={
-                          cat?.theme_color
-                            ? cat.theme_color.includes("gradient")
-                              ? { background: cat.theme_color, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", width: "fit-content" }
-                              : { color: cat.theme_color }
-                            : { color: '#080821' }
-                        }
-                      >
-                        {cat.name}
-                      </p>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p
+                          className="font-black text-lg truncate"
+                          style={
+                            cat?.theme_color
+                              ? cat.theme_color.includes("gradient")
+                                ? { background: cat.theme_color, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", width: "fit-content" }
+                                : { color: cat.theme_color }
+                              : { color: '#080821' }
+                          }
+                        >
+                          {cat.name}
+                        </p>
+                        {cat.featured_position && (
+                          <div className="bg-purple-600 text-white px-2.5 py-0.5 rounded-md text-[9px] font-black uppercase flex items-center shadow-xs">
+                            <Sparkles className="w-2.5 h-2.5 mr-1" /> Pin #{cat.featured_position}
+                          </div>
+                        )}
+                        {cat.admin_boost !== undefined && cat.admin_boost > 0 && !cat.featured_position && (
+                          <div className="bg-indigo-600 text-white px-2.5 py-0.5 rounded-md text-[9px] font-black uppercase flex items-center shadow-xs">
+                            <Zap className="w-2.5 h-2.5 mr-1" /> +{cat.admin_boost} Boost
+                          </div>
+                        )}
+                      </div>
                       <p className="text-xs text-muted-foreground font-bold tracking-widest truncate">/{cat.slug}</p>
                       {cat.title && (
                         <p className="text-[11px] text-primary/80 font-medium truncate mt-0.5">Meta Title: {cat.title}</p>
@@ -548,7 +682,34 @@ const Categories = () => {
                                   className="w-full px-3 py-1.5 rounded-xl bg-muted text-xs font-medium outline-none"
                                 />
                               </div>
-                            </div >
+
+                              {/* Ranking & Promotion in Subcategory Edit */}
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-border/30">
+                                <div className="flex items-center gap-2 bg-muted px-3 py-1 rounded-xl">
+                                  <Sparkles className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    value={editSubData.featuredPosition}
+                                    onChange={e => setEditSubData({ ...editSubData, featuredPosition: e.target.value === "" ? "" : Number(e.target.value) })}
+                                    placeholder="Fixed Pin Position (e.g. 1)"
+                                    className="w-full bg-transparent text-xs font-semibold outline-none placeholder:text-muted-foreground"
+                                  />
+                                </div>
+                                <div className="flex items-center gap-2 bg-muted px-3 py-1 rounded-xl">
+                                  <Zap className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    step="10"
+                                    value={editSubData.adminBoost || ""}
+                                    onChange={e => setEditSubData({ ...editSubData, adminBoost: Number(e.target.value) })}
+                                    placeholder="Admin Boost Score (e.g. 50)"
+                                    className="w-full bg-transparent text-xs font-semibold outline-none placeholder:text-muted-foreground"
+                                  />
+                                </div>
+                              </div>
+                            </div>
                           ) : (
                             <div className="flex items-center gap-4">
                               <div
@@ -562,19 +723,30 @@ const Categories = () => {
                                 )}
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p
-                                  className="text-sm font-black text-foreground truncate"
-                                  style={
-                                    sub?.theme_color
-                                      ? sub.theme_color.includes("gradient")
-                                        ? { background: sub.theme_color, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", width: "fit-content" }
-                                        : { color: sub.theme_color }
-                                      : undefined
-                                  }
-                                >
-                                  {sub.name}
-                                </p>
-                                <p className="text-[10px] text-muted-foreground font-bold tracking-widest mt-0.5">/{sub.slug}</p>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <p
+                                    className="text-sm font-black text-foreground truncate"
+                                    style={
+                                      sub?.theme_color
+                                        ? sub.theme_color.includes("gradient")
+                                          ? { background: sub.theme_color, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", width: "fit-content" }
+                                          : { color: sub.theme_color }
+                                        : undefined
+                                    }
+                                  >
+                                    {sub.name}
+                                  </p>
+                                  {sub.featured_position && (
+                                    <div className="bg-purple-600 text-white px-2 py-0.5 rounded-md text-[8px] font-black uppercase flex items-center shadow-xs shrink-0">
+                                      <Sparkles className="w-2.5 h-2.5 mr-1" /> Pin #{sub.featured_position}
+                                    </div>
+                                  )}
+                                  {sub.admin_boost !== undefined && sub.admin_boost > 0 && !sub.featured_position && (
+                                    <div className="bg-indigo-600 text-white px-2 py-0.5 rounded-md text-[8px] font-black uppercase flex items-center shadow-xs shrink-0">
+                                      <Zap className="w-2.5 h-2.5 mr-1" /> +{sub.admin_boost} Boost
+                                    </div>
+                                  )}
+                                </div>
                                 <p className="text-[10px] text-muted-foreground font-bold tracking-widest truncate">/{sub.slug}</p>
                                 {sub.title && (
                                   <p className="text-[10px] text-primary/80 font-medium truncate mt-0.5">Meta Title: {sub.title}</p>
@@ -592,7 +764,7 @@ const Categories = () => {
                                     ))}
                                   </div>
                                 )}
-                              </div >
+                              </div>
                               <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                                 <button onClick={(e) => startEditSubcategory(e, sub)} className="p-2 rounded-lg hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors">
                                   <Edit2 className="w-4 h-4" />
@@ -601,9 +773,9 @@ const Categories = () => {
                                   <Trash2 className="w-4 h-4" />
                                 </button>
                               </div>
-                            </div >
+                            </div>
                           )}
-                        </div >
+                        </div>
                       ))}
 
                       {/* Add Subcategory Row */}
@@ -659,7 +831,34 @@ const Categories = () => {
                                 className="w-full px-3 py-1.5 rounded-xl bg-white text-xs font-medium outline-none border border-border"
                               />
                             </div>
-                          </div >
+
+                            {/* Ranking & Promotion in Add Subcategory */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-border/30">
+                              <div className="flex items-center gap-2 bg-white px-3 py-1 rounded-xl border border-border">
+                                <Sparkles className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                                <input
+                                  type="number"
+                                  min="1"
+                                  value={newSubFeaturedPosition}
+                                  onChange={e => setNewSubFeaturedPosition(e.target.value === "" ? "" : Number(e.target.value))}
+                                  placeholder="Fixed Pin Position (e.g. 1)"
+                                  className="w-full bg-transparent text-xs font-semibold outline-none placeholder:text-muted-foreground"
+                                />
+                              </div>
+                              <div className="flex items-center gap-2 bg-white px-3 py-1 rounded-xl border border-border">
+                                <Zap className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="10"
+                                  value={newSubAdminBoost || ""}
+                                  onChange={e => setNewSubAdminBoost(Number(e.target.value))}
+                                  placeholder="Admin Boost Score (e.g. 50)"
+                                  className="w-full bg-transparent text-xs font-semibold outline-none placeholder:text-muted-foreground"
+                                />
+                              </div>
+                            </div>
+                          </div>
                         ) : (
                           <button
                             onClick={() => setAddingSubTo(cat.id)}
@@ -668,16 +867,16 @@ const Categories = () => {
                             <Plus className="w-4 h-4" /> ADD SUB-ENTITY
                           </button>
                         )}
-                      </div >
-                    </div >
-                  </motion.div >
+                      </div>
+                    </div>
+                  </motion.div>
                 )}
-              </AnimatePresence >
-            </motion.div >
+              </AnimatePresence>
+            </motion.div>
           ))}
-        </div >
-      </div >
-    </DashboardLayout >
+        </div>
+      </div>
+    </DashboardLayout>
   );
 };
 

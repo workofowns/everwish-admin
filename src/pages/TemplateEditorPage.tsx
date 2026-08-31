@@ -84,6 +84,8 @@ export default function TemplateEditorPage() {
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   const [previewVideoUrl, setPreviewVideoUrl] = useState("");
+  const [featuredPosition, setFeaturedPosition] = useState<number | "">("");
+  const [adminBoost, setAdminBoost] = useState<number>(0);
 
   // Thumbnail
   const [thumbnailUrl, setThumbnailUrl] = useState("");
@@ -126,6 +128,8 @@ export default function TemplateEditorPage() {
       setThumbnailUrl(templateData.thumbnail_url || "");
       setTags(templateData.tags || []);
       setIsActive(templateData.is_active ?? true);
+      setFeaturedPosition(templateData.featured_position ?? "");
+      setAdminBoost(templateData.admin_boost ?? 0);
 
       // Multi-category & Multi-subcategory hydration
       const catIds: string[] =
@@ -469,6 +473,8 @@ export default function TemplateEditorPage() {
       thumbnailUrl: finalThumbnail,
       previewImages: finalPreviewImages,
       previewVideoUrl: previewVideoUrl.trim() || null,
+      featuredPosition: featuredPosition === "" ? null : Number(featuredPosition),
+      adminBoost: Number(adminBoost) || 0,
       isActive,
       formFields: processedFields,
     };
@@ -939,7 +945,61 @@ export default function TemplateEditorPage() {
               </div>
             </div>
 
-            {/* Card 4: Media Assets & Visuals */}
+            {/* Card 4: Catalog Ranking & Promotion Controls */}
+            <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-xs space-y-6">
+              <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-bold text-slate-800">Ranking & Promotion</h2>
+                    <p className="text-[11px] text-slate-400">Pin to fixed top positions or add custom score boost</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 flex items-center justify-between">
+                    <span>Fixed Pin Position</span>
+                    <span className="text-[10px] text-slate-400 font-normal">Optional</span>
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={featuredPosition}
+                    onChange={(e) => setFeaturedPosition(e.target.value === "" ? "" : Number(e.target.value))}
+                    placeholder="e.g. 1 (Top slot)"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-primary/15 focus:border-primary/40 transition-all placeholder:text-slate-300"
+                  />
+                  <p className="text-[10px] text-slate-400">
+                    Leave empty for organic ranking. Enter 1 to guarantee 1st place.
+                  </p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 flex items-center justify-between">
+                    <span>Admin Boost Score</span>
+                    <span className="text-[10px] text-slate-400 font-normal">Hybrid weight</span>
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="10"
+                    value={adminBoost || ""}
+                    onChange={(e) => setAdminBoost(Number(e.target.value))}
+                    placeholder="e.g. 50, 100"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-primary/15 focus:border-primary/40 transition-all placeholder:text-slate-300"
+                  />
+                  <p className="text-[10px] text-slate-400">
+                    Extra points added to base score before recency multiplier.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 5: Media Assets & Visuals */}
             <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-xs space-y-6">
               <div className="flex items-center justify-between pb-4 border-b border-slate-100">
                 <div className="flex items-center gap-2.5">

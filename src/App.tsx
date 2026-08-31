@@ -18,6 +18,7 @@ import ContactMessages from "./pages/ContactMessages";
 import FeedbackList from "./pages/FeedbackList";
 import AIWaitlist from "./pages/AIWaitlist";
 import Analytics from "./pages/Analytics";
+import RankingsPage from "./pages/RankingsPage";
 import Media from "./pages/Media";
 import CurrencyRates from "./pages/CurrencyRates";
 import PaymentHistory from "./pages/PaymentHistory";
@@ -44,6 +45,7 @@ const App = () => (
           <Route path="/login" element={<Login />} />
           <Route path="/" element={<RequireAuth><Index /></RequireAuth>} />
           <Route path="/analytics" element={<RequireAuth><Analytics /></RequireAuth>} />
+          <Route path="/rankings" element={<RequireAuth><RankingsPage /></RequireAuth>} />
           <Route path="/categories" element={<RequireAuth><Categories /></RequireAuth>} />
           <Route path="/templates" element={<RequireAuth><Templates /></RequireAuth>} />
           <Route path="/templates/new" element={<RequireAuth><TemplateEditorPage /></RequireAuth>} />

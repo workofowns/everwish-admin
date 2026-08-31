@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchApi } from "@/lib/api";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import {
-  Plus, Search, Crown, Edit2, Trash2, Layout, Box, Sparkles
+  Plus, Search, Crown, Edit2, Trash2, Layout, Box, Sparkles, Zap
 } from "lucide-react";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
@@ -33,6 +33,8 @@ interface Template {
   preview_video_url?: string | null;
   price?: number;
   prices?: Record<string, number>;
+  featured_position?: number | null;
+  admin_boost?: number;
 }
 
 interface TemplatesResponse {
@@ -177,6 +179,16 @@ const Templates = () => {
                     {template.type === "premium" && (
                       <div className="bg-amber-400 text-black px-2 py-0.5 rounded-md text-[8px] font-black uppercase flex items-center w-fit shadow-xs">
                         <Crown className="w-2.5 h-2.5 mr-1" /> Premium
+                      </div>
+                    )}
+                    {template.featured_position && (
+                      <div className="bg-purple-600 text-white px-2 py-0.5 rounded-md text-[8px] font-black uppercase flex items-center w-fit shadow-xs">
+                        <Sparkles className="w-2.5 h-2.5 mr-1" /> Pin #{template.featured_position}
+                      </div>
+                    )}
+                    {template.admin_boost > 0 && !template.featured_position && (
+                      <div className="bg-indigo-600 text-white px-2 py-0.5 rounded-md text-[8px] font-black uppercase flex items-center w-fit shadow-xs">
+                        <Zap className="w-2.5 h-2.5 mr-1" /> +{template.admin_boost} Boost
                       </div>
                     )}
                     <div className="bg-slate-900/70 text-white backdrop-blur-xs px-2 py-0.5 rounded-md text-[8px] font-bold uppercase w-fit">
